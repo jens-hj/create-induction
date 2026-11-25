@@ -37,11 +37,15 @@ Real machines often spin the windings and keep the magnets still. That works her
 
 ## Backwards: a motor
 
-The same parts make an electric motor. Leave the bearing's shaft unpowered so the rotor turns freely, feed the coils energy, and switch each coil on just after a magnet has passed it so it pushes the magnet onwards. Create's Redstone Contacts make the commutator: one hanging under each magnet, one fixed beside its path a little past each coil, with redstone from the fixed contact to its coil. Give the rotor a nudge and it runs by itself, in the direction the contacts are offset.
+The same parts run the other way. Put the coils on the rotor around a Commutator, stand a north and a south pole either side, and feed a Slip Ring pressed against the Commutator. The Commutator reverses each coil as it turns past the magnets, the rotor spins, and the Dynamo Bearing under it, with nothing else turning its shaft, hands that rotation to your Create machines.
+
+![A brushed motor: four coils around a commutator on a rotor between two magnets, a battery wired to the slip ring above, and a gearbox, drill and cogwheel turning below the bearing](https://raw.githubusercontent.com/jens-hj/create-induction/main/docs/gallery/motor.png)
+
+It behaves like a real DC motor. It starts by itself, runs faster with less load, slows as you hang more machines on the shaft and stalls if you ask too much. More coils, stronger fields and a tighter gap make it stronger.
 
 ## Blocks
 
-**Dynamo Bearing** – Feed it rotation from behind, glue a structure to its face and click it with an empty hand. The structure becomes a physics rotor driven towards the shaft's speed. Its stress impact rises and falls with the load.
+**Dynamo Bearing** – Feed it rotation from behind, glue a structure to its face and click it with an empty hand. The structure becomes a physics rotor driven towards the shaft's speed. Its stress impact rises and falls with the load. Leave its shaft undriven and it works backwards: a rotor spun by coils turns the shaft.
 
 **Permanent Magnet** – An always-on magnet. The red face is north. It attracts and repels the Redstone Magnets from Create Aeronautics exactly like they do each other.
 
@@ -51,6 +55,8 @@ Give it a redstone signal and it runs the other way: it spends energy to become 
 **Slip Ring** – Carries electricity across a turning joint. Place two face to face, one on the moving structure and one beside it; while their faces touch they pass Forge Energy straight through, and with Power Grid they join their wire terminals like brushes on a ring. Useful on any rotating or swivelling build, not only generators.
 
 ![Close-up of two slip rings meeting on the axis of a rotor, wired to the coils below](https://raw.githubusercontent.com/jens-hj/create-induction/main/docs/gallery/slip-rings.png)
+
+**Commutator** – A Slip Ring cut into segments, for motors. It powers the coils attached to it, directly or through each other, and switches each one by its position. Scroll on it to set the number of magnet poles around the armature; a negative number reverses the motor. Feed it Forge Energy through its Slip Ring, or with Power Grid wire the Slip Ring's terminals to a supply.
 
 Engineer's Goggles show voltage, current and power on coils, and rotor speed and delivered power on the bearing.
 

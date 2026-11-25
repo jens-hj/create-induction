@@ -17,6 +17,8 @@ Player-facing description: [docs/MODRINTH.md](docs/MODRINTH.md).
 - `content/magnet` – a permanent magnet registered in Simulated's magnet map.
 - `content/slipring` – two rings face to face on different bodies pair up and pass FE straight through; with Power
   Grid their terminals are joined by a small brush resistance.
+- `content/commutator` – a slip ring that puts the coils joined to it under its control: each sub-step every coil
+  asks it for a drive factor from its angle to the other ring, and runs as a voltage-fed electromagnet.
 - `compat/powergrid` – only loaded with Power Grid: the coil as a two-terminal voltage source.
 
 ## Requirements

@@ -202,8 +202,9 @@ public final class Showcase {
             report.add("riveted skipped: no Simulated Coasters");
         }
 
-        if (!only.isEmpty() && !only.contains("inside")) return;
         boolean wires = ModList.get().isLoaded("powergrid");
+        if (wires && (only.isEmpty() || only.contains("motor"))) motorScene();
+        if (!only.isEmpty() && !only.contains("inside")) return;
         // 4: coils on the rotor, magnets around it, slip rings on the axis.
         scene(3, this::buildInsideOut, 5.5, 4.0, 6.5, 3);
         steps.add(onServer(server -> bearing(server, origin(3).above()).assembleNextTick = true));
@@ -221,6 +222,60 @@ public final class Showcase {
         steps.add(onServer(server -> view(server, origin(3).above(4), 4.2, 0.9, 1.6)));
         pause(30);
         shot("slip-rings");
+    }
+
+    // 5: a brushed motor. Battery to the brushes, commutator and coils on the rotor, the bearing turning machines.
+    private void motorScene() {
+        scene(4, this::buildMotor, 6.0, 3.0, 5.0, 3);
+        steps.add(onServer(server -> bearing(server, origin(4).above(2)).assembleNextTick = true));
+        pause(30);
+        steps.add(onServer(server -> {
+            ServerLevel level = server.overworld();
+            BlockPos brushes = origin(4).above(5);
+            for (int x : new int[] {-3, 3}) {
+                for (int y = 0; y <= 6; y++) level.setBlock(origin(4).offset(x, y, -2), casing(), 3);
+            }
+            for (int x = -3; x <= 3; x++) level.setBlock(brushes.offset(x, 1, -2), casing(), 3);
+            for (int z = -1; z <= 0; z++) level.setBlock(brushes.offset(0, 1, z), casing(), 3);
+            level.setBlock(brushes, ModContent.SLIP_RING.get().defaultBlockState().setValue(SlipRingBlock.FACING, Direction.DOWN), 3);
+            BlockPos battery = brushes.offset(2, 2, -2);
+            level.setBlock(battery, grid("battery").defaultBlockState(), 3);
+            for (int terminal = 0; terminal < 2; terminal++) PowerGridRig.wire(level, brushes, terminal, battery, terminal);
+        }));
+        pause(240);
+        steps.add(onServer(server -> {
+            DynamoBearingBlockEntity bearing = bearing(server, origin(4).above(2));
+            report.add("motor rotor=" + bearing.rotorSpeed() + " rpm shaft=" + bearing.getSpeed() + " output=" + Math.round(bearing.outputWatts())
+                + " W battery=" + PowerGridRig.battery(server.overworld(), origin(4).above(5).offset(2, 2, -2)));
+            if (Math.abs(bearing.getSpeed()) < 8) throw new IllegalStateException("motor: shaft is not turning");
+        }));
+        shot("motor");
+        steps.add(onServer(server -> view(server, origin(4).above(4), 3.6, 1.6, 2.6)));
+        pause(30);
+        shot("commutator");
+    }
+
+    private void buildMotor(ServerLevel level) {
+        BlockPos base = origin(4);
+        BlockPos hub = base.above(3);
+        BlockPos commutator = hub.above();
+        // Below the bearing: a gearbox turning the shaft sideways to a drill and a saw.
+        level.setBlock(base, create("gearbox").defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.X), 3);
+        level.setBlock(base.above(), create("shaft").defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.Y), 3);
+        level.setBlock(base.south(), create("shaft").defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.Z), 3);
+        level.setBlock(base.south(2), create("mechanical_drill").defaultBlockState().setValue(BlockStateProperties.FACING, Direction.SOUTH), 3);
+        level.setBlock(base.north(), create("large_cogwheel").defaultBlockState().setValue(BlockStateProperties.AXIS, Direction.Axis.Z), 3);
+        level.setBlock(base.above(2), ModContent.DYNAMO_BEARING.get().defaultBlockState().setValue(DynamoBearingBlock.FACING, Direction.UP), 3);
+        level.setBlock(hub, casing(), 3);
+        level.setBlock(commutator, ModContent.COMMUTATOR.get().defaultBlockState().setValue(SlipRingBlock.FACING, Direction.UP), 3);
+        for (Direction side : Direction.Plane.HORIZONTAL) level.setBlock(commutator.relative(side), coil(side), 3);
+        glue(level, hub.offset(-1, 0, -1), commutator.offset(1, 0, 1));
+        // One north and one south pole facing the armature.
+        for (Direction side : new Direction[] {Direction.EAST, Direction.WEST}) {
+            BlockPos post = commutator.relative(side, 3);
+            for (int y = 1; y <= 4; y++) level.setBlock(post.below(y), casing(), 3);
+            level.setBlock(post, magnet(Direction.WEST), 3);
+        }
     }
 
     /** Goes to a scene, builds it and points the camera at {@code lookUp} blocks above its origin. */

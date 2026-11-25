@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+- Electric motors. A Dynamo Bearing with nothing else turning its shaft now drives it from the rotor, so a rotor spun by coils powers Create machines.
+- New block: Commutator. Paired with a Slip Ring it feeds the coils attached to it and reverses each one as it turns, making a self-starting brushed motor. Scroll to set the magnet pole count; negative reverses it.
+- With Power Grid, wire a supply to the Slip Ring on a Commutator to run the motor from a circuit.
+
 ## 0.2.1
 - Fixed faces of neighbouring blocks disappearing next to coils, magnets and slip rings.
 
