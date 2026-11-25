@@ -27,6 +27,20 @@ final class PowerGridRig {
         test.assertTrue(test.getLevel().addFreshEntity(entity), "Wire should spawn");
     }
 
+    /** Hangs a wire between two terminals anywhere in the level. */
+    static void wire(net.minecraft.server.level.ServerLevel level, BlockPos from, int fromTerminal, BlockPos to, int toTerminal) {
+        var stack = new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath("powergrid", "wire")), 8);
+        var entity = HangingWireEntity.create(level, new BlockWireEndpoint(from, fromTerminal), new BlockWireEndpoint(to, toTerminal), stack, null);
+        if (!level.addFreshEntity(entity)) throw new IllegalStateException("Wire did not spawn");
+    }
+
+    static String battery(net.minecraft.server.level.ServerLevel level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof org.patryk3211.powergrid.electricity.battery.BatteryBlockEntity battery) {
+            return battery.getEnergy() + " of " + battery.getCapacity();
+        }
+        return "missing";
+    }
+
     static void setResistance(GameTestHelper test, BlockPos pos, double ohms) {
         ((ResistorBlockEntity) test.getBlockEntity(pos)).setValue(ohms);
     }
