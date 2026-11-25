@@ -1,12 +1,11 @@
 {
   "parent": "minecraft:block/block",
-  "render_type": "minecraft:cutout",
   "textures": {
+    "particle": "create_induction:block/dynamo_bearing_side",
     "side": "create_induction:block/dynamo_bearing_side",
     "top": "create_induction:block/dynamo_bearing_top",
-    "bottom": "create_induction:block/dynamo_bearing_bottom",
     "inner": "create_induction:block/dynamo_bearing_inner",
-    "particle": "create_induction:block/dynamo_bearing_side"
+    "bottom": "create_induction:block/dynamo_bearing_bottom"
   },
   "elements": [
     {
@@ -22,58 +21,22 @@
       ],
       "faces": {
         "north": {
-          "texture": "#side",
-          "uv": [
-            0,
-            0,
-            16,
-            4
-          ]
+          "texture": "#side"
         },
         "south": {
-          "texture": "#side",
-          "uv": [
-            0,
-            0,
-            16,
-            4
-          ]
+          "texture": "#side"
         },
         "east": {
-          "texture": "#side",
-          "uv": [
-            0,
-            0,
-            16,
-            4
-          ]
+          "texture": "#side"
         },
         "west": {
-          "texture": "#side",
-          "uv": [
-            0,
-            0,
-            16,
-            4
-          ]
+          "texture": "#side"
         },
         "up": {
-          "texture": "#top",
-          "uv": [
-            0,
-            0,
-            16,
-            16
-          ]
+          "texture": "#top"
         },
         "down": {
-          "texture": "#inner",
-          "uv": [
-            0,
-            0,
-            16,
-            16
-          ]
+          "texture": "#inner"
         }
       }
     }
