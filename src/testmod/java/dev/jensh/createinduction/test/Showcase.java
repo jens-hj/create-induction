@@ -218,7 +218,7 @@ public final class Showcase {
             if (wires) report.add("insideout battery=" + PowerGridRig.battery(server.overworld(), origin(3).offset(5, 0, 2)));
         }));
         shot("inside-out");
-        steps.add(onServer(server -> view(server, origin(3).above(4), 2.5, 2.2, 3.2)));
+        steps.add(onServer(server -> view(server, origin(3).above(4), 4.2, 0.9, 1.6)));
         pause(30);
         shot("slip-rings");
     }

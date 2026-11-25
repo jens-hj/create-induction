@@ -15,6 +15,8 @@ Player-facing description: [docs/MODRINTH.md](docs/MODRINTH.md).
 - `content/bearing` – assembles the structure on its face into a sub-level on a free hinge and applies drive torque
   directly; the stress impact follows the mechanical power delivered.
 - `content/magnet` – a permanent magnet registered in Simulated's magnet map.
+- `content/slipring` – two rings face to face on different bodies pair up and pass FE straight through; with Power
+  Grid their terminals are joined by a small brush resistance.
 - `compat/powergrid` – only loaded with Power Grid: the coil as a two-terminal voltage source.
 
 ## Requirements
