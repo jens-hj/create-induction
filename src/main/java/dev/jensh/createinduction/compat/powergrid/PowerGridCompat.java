@@ -12,4 +12,8 @@ public final class PowerGridCompat {
     public static InductionCoilBlockEntity createCoil(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         return new PowerGridCoilBlockEntity(type, pos, state);
     }
+
+    public static dev.jensh.createinduction.content.slipring.SlipRingBlockEntity createSlipRing(BlockEntityType<?> type, BlockPos pos, BlockState state) {
+        return new PowerGridSlipRingBlockEntity(type, pos, state);
+    }
 }

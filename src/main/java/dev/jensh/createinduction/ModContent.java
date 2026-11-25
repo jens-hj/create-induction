@@ -7,6 +7,8 @@ import dev.jensh.createinduction.content.bearing.DynamoPlateBlockEntity;
 import dev.jensh.createinduction.content.coil.InductionCoilBlock;
 import dev.jensh.createinduction.content.coil.InductionCoilBlockEntity;
 import dev.jensh.createinduction.content.magnet.PermanentMagnetBlock;
+import dev.jensh.createinduction.content.slipring.SlipRingBlock;
+import dev.jensh.createinduction.content.slipring.SlipRingBlockEntity;
 import dev.jensh.createinduction.content.magnet.PermanentMagnetBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -48,10 +50,18 @@ public final class ModContent {
         () -> new DynamoPlateBlock(BlockBehaviour.Properties.of().mapColor(MapColor.PODZOL).strength(2.5f, 6.0f)
             .sound(SoundType.WOOD).noOcclusion().noLootTable().pushReaction(PushReaction.BLOCK)));
 
+    public static final DeferredBlock<SlipRingBlock> SLIP_RING = BLOCKS.register("slip_ring",
+        () -> new SlipRingBlock(metal(MapColor.COLOR_ORANGE).sound(SoundType.COPPER)));
+
     public static final DeferredItem<BlockItem> PERMANENT_MAGNET_ITEM = ITEMS.registerSimpleBlockItem(PERMANENT_MAGNET);
     public static final DeferredItem<BlockItem> INDUCTION_COIL_ITEM = ITEMS.registerSimpleBlockItem(INDUCTION_COIL);
     public static final DeferredItem<BlockItem> DYNAMO_BEARING_ITEM = ITEMS.registerSimpleBlockItem(DYNAMO_BEARING);
 
+    public static final DeferredItem<BlockItem> SLIP_RING_ITEM = ITEMS.registerSimpleBlockItem(SLIP_RING);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SlipRingBlockEntity>> SLIP_RING_ENTITY =
+        BLOCK_ENTITIES.register("slip_ring", () -> BlockEntityType.Builder
+            .of(SlipRingBlockEntity::create, SLIP_RING.get()).build(null));
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PermanentMagnetBlockEntity>> PERMANENT_MAGNET_ENTITY =
         BLOCK_ENTITIES.register("permanent_magnet", () -> BlockEntityType.Builder
             .of(PermanentMagnetBlockEntity::new, PERMANENT_MAGNET.get()).build(null));
@@ -73,6 +83,7 @@ public final class ModContent {
                 output.accept(DYNAMO_BEARING_ITEM.get());
                 output.accept(INDUCTION_COIL_ITEM.get());
                 output.accept(PERMANENT_MAGNET_ITEM.get());
+                output.accept(SLIP_RING_ITEM.get());
             })
             .build());
 

@@ -16,6 +16,7 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 @Mod(CreateInduction.ID)
 public final class CreateInduction {
     public static final String ID = "create_induction";
+    public static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
     public static final boolean POWER_GRID = ModList.get().isLoaded("powergrid");
 
     public CreateInduction(IEventBus modBus, ModContainer container) {
@@ -38,5 +39,7 @@ public final class CreateInduction {
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModContent.INDUCTION_COIL_ENTITY.get(),
             (coil, side) -> coil.energy());
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModContent.SLIP_RING_ENTITY.get(),
+            (ring, side) -> ring.energy());
     }
 }

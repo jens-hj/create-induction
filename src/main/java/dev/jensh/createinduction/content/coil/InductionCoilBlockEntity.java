@@ -49,6 +49,8 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
 
     /** Stored energy [FE], kept fractional so small sub-step amounts are not rounded away. */
     private double stored;
+    /** The part of {@link #stored} that came in from outside rather than from generating. */
+    private double imported;
     private final IEnergyStorage energy = new CoilEnergy();
 
     // Totals over the current tick, turned into the displayed values at its end.
@@ -166,19 +168,21 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
         }
     }
 
+    /** Hands on what this coil generated. Energy it was given is kept for running it as an electromagnet. */
     private void pushEnergy() {
-        if (stored < 1) return;
+        imported = Math.min(imported, stored);
+        if (stored - imported < 1) return;
         for (Direction side : Direction.values()) {
             BlockPos target = worldPosition.relative(side);
             if (level.getBlockEntity(target) instanceof InductionCoilBlockEntity) continue;
             IEnergyStorage storage = level.getCapability(Capabilities.EnergyStorage.BLOCK, target, side.getOpposite());
             if (storage == null || !storage.canReceive()) continue;
-            int sent = storage.receiveEnergy((int) Math.min(stored, Integer.MAX_VALUE), false);
+            int sent = storage.receiveEnergy((int) Math.min(stored - imported, Integer.MAX_VALUE), false);
             if (sent > 0) {
                 stored -= sent;
                 setChanged();
             }
-            if (stored < 1) return;
+            if (stored - imported < 1) return;
         }
     }
 
@@ -385,6 +389,7 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
     protected void write(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         super.write(compound, registries, clientPacket);
         compound.putDouble("Energy", stored);
+        compound.putDouble("Imported", imported);
         if (clientPacket) {
             compound.putFloat("Voltage", voltage);
             compound.putFloat("Current", current);
@@ -397,6 +402,7 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
     protected void read(CompoundTag compound, HolderLookup.Provider registries, boolean clientPacket) {
         super.read(compound, registries, clientPacket);
         stored = compound.getDouble("Energy");
+        imported = compound.getDouble("Imported");
         if (clientPacket) {
             voltage = compound.getFloat("Voltage");
             current = compound.getFloat("Current");
@@ -445,6 +451,7 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
             int accepted = (int) Math.max(0, Math.min(amount, Math.floor(capacity() - stored)));
             if (!simulate && accepted > 0) {
                 stored += accepted;
+                imported += accepted;
                 setChanged();
             }
             return accepted;

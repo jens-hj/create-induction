@@ -17,6 +17,9 @@ public final class Config {
     public static final ModConfigSpec.DoubleValue FE_PER_WATT_TICK;
     public static final ModConfigSpec.IntValue ENERGY_BUFFER;
 
+    public static final ModConfigSpec.DoubleValue SLIP_RING_REACH;
+    public static final ModConfigSpec.DoubleValue SLIP_RING_RESISTANCE;
+
     public static final ModConfigSpec.DoubleValue BEARING_GAIN;
     public static final ModConfigSpec.DoubleValue BEARING_MAX_TORQUE;
     public static final ModConfigSpec.DoubleValue BEARING_MAX_POWER;
@@ -83,6 +86,15 @@ public final class Config {
         SU_PER_WATT = builder
             .comment("Stress units charged per watt of mechanical power delivered. Power Grid is about 6.25.")
             .defineInRange("suPerWatt", 6.25, 0.0, 10000.0);
+        builder.pop();
+
+        builder.push("slipRing");
+        SLIP_RING_REACH = builder
+            .comment("How far apart [blocks] the contact faces of two Slip Rings may be and still touch.")
+            .defineInRange("reach", 0.75, 0.1, 4.0);
+        SLIP_RING_RESISTANCE = builder
+            .comment("Resistance [ohm] of each brush contact in a Power Grid circuit.")
+            .defineInRange("resistance", 0.05, 0.0001, 1000.0);
         builder.pop();
 
         SPEC = builder.build();

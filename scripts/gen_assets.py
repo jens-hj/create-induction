@@ -293,6 +293,44 @@ def bearing_bottom():
     return c.image
 
 
+# ---- slip ring: casing body, a stack of copper rings and a carbon contact face
+
+def slip_side():
+    c = Canvas(51)
+    c.plate(0, 8, 15, 15, ANDESITE, 6, 0.8, rise=3, drop=4)  # body
+    c.planks(2, 10, 13, 13)
+    c.bevel(1, 9, 14, 14, ANDESITE, 4, 7)
+    c.plate(6, 10, 9, 13, COPPER, 5, 0.5, rise=3, drop=4)  # wire terminal
+    c.put(7, 11, tone(IRON, 1))
+    c.put(8, 11, tone(IRON, 2))
+    c.put(7, 12, tone(IRON, 2))
+    c.put(8, 12, tone(IRON, 4))
+    for y in range(3, 8):  # rings, with dark insulation between them
+        for x in range(3, 13):
+            along = (x - 3) / 9
+            shade = 1.2 if along < 0.15 else -2.2 if along > 0.85 else -1.0 if along > 0.65 else 0
+            c.put(x, y, tone(IRON, 1 + (shade > 0)) if y in (4, 6) else tone(COPPER, 6.4 + shade + 0.5 * noise(x, y, 52)))
+    for x in range(4, 12):  # contact
+        for y in range(0, 3):
+            c.put(x, y, tone(IRON, (4 if y == 0 else 2) + (x < 6) - (x > 9) * 1.5))
+    return c.image
+
+
+def slip_face():
+    c = Canvas(53)
+    c.plate(0, 0, 15, 15, ANDESITE, 6, 0.8, rise=3, drop=4)  # shoulder of the body
+    for (x, y) in ((1, 1), (14, 1), (1, 13), (14, 13)):
+        c.bolt(x, y, ANDESITE, 9, 2)
+    c.plate(3, 3, 12, 12, COPPER, 5, 0.8, rise=3, drop=4)  # top of the ring stack
+    c.plate(4, 4, 11, 11, IRON, 3, 0.8, rise=2, drop=2)  # carbon face
+    for y in range(5, 11):
+        for x in range(5, 11):
+            d = max(abs(x - 7.5), abs(y - 7.5))
+            if 1 < d < 2:
+                c.put(x, y, tone(COPPER, 5 + ((7.5 - x) + (7.5 - y)) / 2.5))
+    return c.image
+
+
 # ---- models: parts sample the elevation drawings through vanilla's default position-based UVs
 
 def element(start, end, **faces):
@@ -340,6 +378,14 @@ MAGNET = model(
         element([3, 0, 3], [13, 1, 13], nsew="side", d="south"),
     ])
 
+SLIP_RING = model(
+    {"side": texture("slip_ring_side"), "face": texture("slip_ring_face"), "back": texture("dynamo_bearing_bottom")},
+    [
+        element([0, 0, 0], [16, 8, 16], nsew="side", u="face", d="back"),
+        element([3, 8, 3], [13, 13, 13], nsew="side", u="face"),
+        element([4, 13, 4], [12, 16, 12], nsew="side", u="face"),
+    ])
+
 BEARING_TEXTURES = {"side": texture("dynamo_bearing_side"), "top": texture("dynamo_bearing_top"),
                     "inner": texture("dynamo_bearing_inner"), "bottom": texture("dynamo_bearing_bottom")}
 BEARING_BODY = [
@@ -366,12 +412,15 @@ def main():
         "dynamo_bearing_top": bearing_top(),
         "dynamo_bearing_inner": bearing_inner(),
         "dynamo_bearing_bottom": bearing_bottom(),
+        "slip_ring_side": slip_side(),
+        "slip_ring_face": slip_face(),
     }
     for name, image in textures.items():
         image.save(TEXTURES / f"{name}.png")
     models = {
         "induction_coil": COIL,
         "permanent_magnet": MAGNET,
+        "slip_ring": SLIP_RING,
         "dynamo_bearing": model(BEARING_TEXTURES, BEARING_BODY + BEARING_PLATE),
         "dynamo_bearing_base": model(BEARING_TEXTURES, BEARING_BODY),
         "dynamo_bearing_plate": model(BEARING_TEXTURES, BEARING_PLATE),

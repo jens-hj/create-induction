@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "CCC",
+    "SAS"
+  ],
+  "key": {
+    "C": {
+      "item": "create:copper_sheet"
+    },
+    "S": {
+      "item": "create:shaft"
+    },
+    "A": {
+      "item": "create:andesite_casing"
+    }
+  },
+  "result": {
+    "id": "create_induction:slip_ring",
+    "count": 2
+  }
+}
