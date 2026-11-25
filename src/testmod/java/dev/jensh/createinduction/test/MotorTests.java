@@ -135,6 +135,29 @@ public class MotorTests {
         test.runAfterDelay(630, () -> test.assertTrue(rpm(test) < -15, "The motor should have turned itself round, was " + rpm(test) + " rpm"));
     }
 
+    /**
+     * With nothing else turning its shaft, the bearing hands the rotor's turning on to the kinetic network, and
+     * what the network takes holds the rotor back.
+     */
+    @GameTest(template = "empty", batch = "motord", timeoutTicks = 700)
+    public static void motorTurnsMachinesOnItsShaft(GameTestHelper test) {
+        run(test, "motor loaded", -4, true);
+        // A drill hanging off the shaft, in place of the kick motor.
+        test.runAfterDelay(300, () -> test.setBlock(MOTOR, create("mechanical_drill").defaultBlockState()
+            .setValue(BlockStateProperties.FACING, Direction.DOWN)));
+        double[] free = new double[1];
+        test.runAfterDelay(295, () -> free[0] = Math.abs(rpm(test)));
+        test.runAfterDelay(630, () -> {
+            DynamoBearingBlockEntity bearing = (DynamoBearingBlockEntity) test.getBlockEntity(BEARING);
+            var drill = (com.simibubi.create.content.kinetics.base.KineticBlockEntity) test.getBlockEntity(MOTOR);
+            LOGGER.info("[induction] motor loaded: free {} rpm, loaded {} rpm, shaft {} rpm, drill {} rpm, output {} W",
+                free[0], rpm(test), bearing.getSpeed(), drill.getSpeed(), bearing.outputWatts());
+            test.assertTrue(Math.abs(drill.getSpeed()) >= 8, "The drill should be turning, was " + drill.getSpeed() + " rpm");
+            test.assertTrue(bearing.outputWatts() > 5, "The rotor should be giving power to the shaft, was " + bearing.outputWatts() + " W");
+            test.assertTrue(Math.abs(rpm(test)) < free[0] - 1, "The load should slow the rotor: " + free[0] + " rpm free, " + rpm(test) + " loaded");
+        });
+    }
+
     /** The same machine with empty coils is only a flywheel. */
     @GameTest(template = "empty", batch = "motorc", timeoutTicks = 700)
     public static void withoutEnergyTheRotorCoastsToAStop(GameTestHelper test) {
