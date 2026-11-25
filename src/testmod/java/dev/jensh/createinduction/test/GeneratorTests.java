@@ -81,7 +81,7 @@ public final class GeneratorTests {
         });
     }
 
-    private static int storedInCoils(GameTestHelper test) {
+    static int storedInCoils(GameTestHelper test) {
         int stored = 0;
         for (Direction side : Direction.Plane.HORIZONTAL) stored += coil(test, HUB.relative(side, 4)).energy().getEnergyStored();
         return stored;
