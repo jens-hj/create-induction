@@ -20,6 +20,13 @@ final class PowerGridRig {
         test.assertTrue(test.getLevel().addFreshEntity(entity), "Wire should spawn");
     }
 
+    /** Wires two blocks given by their real positions, which may be inside a sub-level. */
+    static void wireAbsolute(GameTestHelper test, BlockPos from, BlockPos to, int terminal) {
+        var stack = new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.fromNamespaceAndPath("powergrid", "wire")), 4);
+        var entity = HangingWireEntity.create(test.getLevel(), new BlockWireEndpoint(from, terminal), new BlockWireEndpoint(to, terminal), stack, null);
+        test.assertTrue(test.getLevel().addFreshEntity(entity), "Wire should spawn");
+    }
+
     static void setResistance(GameTestHelper test, BlockPos pos, double ohms) {
         ((ResistorBlockEntity) test.getBlockEntity(pos)).setValue(ohms);
     }
