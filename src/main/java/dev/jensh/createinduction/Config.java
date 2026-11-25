@@ -25,6 +25,8 @@ public final class Config {
     public static final ModConfigSpec.DoubleValue BEARING_MAX_POWER;
     public static final ModConfigSpec.DoubleValue BEARING_FRICTION;
     public static final ModConfigSpec.DoubleValue BEARING_BASE_IMPACT;
+    public static final ModConfigSpec.DoubleValue BEARING_OUTPUT_CAPACITY;
+    public static final ModConfigSpec.DoubleValue BEARING_OUTPUT_START;
     public static final ModConfigSpec.DoubleValue SU_PER_WATT;
 
     static {
@@ -83,6 +85,13 @@ public final class Config {
         BEARING_BASE_IMPACT = builder
             .comment("Stress impact of an idle bearing [SU per RPM].")
             .defineInRange("baseImpact", 2.0, 0.0, 1024.0);
+        BEARING_OUTPUT_CAPACITY = builder
+            .comment("Stress capacity a rotor-driven bearing offers its shaft [SU per RPM]. What the rotor can really",
+                "carry is decided by the physics: too much load and it slows down and stalls.")
+            .defineInRange("outputCapacity", 512.0, 0.0, 65536.0);
+        BEARING_OUTPUT_START = builder
+            .comment("Rotor speed [RPM] from which an undriven bearing starts turning its shaft. It lets go at half this.")
+            .defineInRange("outputStart", 8.0, 1.0, 256.0);
         SU_PER_WATT = builder
             .comment("Stress units charged per watt of mechanical power delivered. Power Grid is about 6.25.")
             .defineInRange("suPerWatt", 6.25, 0.0, 10000.0);

@@ -3,7 +3,7 @@ package dev.jensh.createinduction.content.bearing;
 import com.simibubi.create.content.contraptions.AssemblyException;
 import com.simibubi.create.content.contraptions.IDisplayAssemblyExceptions;
 import com.simibubi.create.content.kinetics.KineticNetwork;
-import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
+import com.simibubi.create.content.kinetics.base.GeneratingKineticBlockEntity;
 import com.simibubi.create.foundation.utility.CreateLang;
 import dev.jensh.createinduction.Config;
 import dev.jensh.createinduction.ModContent;
@@ -41,7 +41,7 @@ import org.joml.Vector3d;
 import java.util.List;
 import java.util.UUID;
 
-public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDisplayAssemblyExceptions, BlockEntitySubLevelActor {
+public class DynamoBearingBlockEntity extends GeneratingKineticBlockEntity implements IDisplayAssemblyExceptions, BlockEntitySubLevelActor {
     private static final double TICK = 0.05;
     private static final double RPM_TO_RADIANS = Math.PI / 30.0;
 
@@ -69,7 +69,19 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
     private int stressCooldown;
     /** Rotor speed relative to the bearing [RPM], for the goggles. */
     private float rotorSpeed;
-    private double lastRelativeSpin;
+    private volatile double lastRelativeSpin;
+    /**
+     * Speed [RPM] this bearing puts on its own shaft. Nonzero only while nothing else turns the shaft and the rotor
+     * is being spun from outside, by coils for instance: then the bearing works backwards and the rotor drives
+     * the kinetic network.
+     */
+    private volatile float output;
+    /** Mechanical power [W] the network takes from the shaft while the rotor drives it. */
+    private volatile double loadWatts;
+    private int outputCooldown;
+    /** Work taken out of the rotor during the current tick [physics units]. */
+    private double taken;
+    private double outputWatts;
 
     public DynamoBearingBlockEntity(BlockPos pos, BlockState state) {
         this(ModContent.DYNAMO_BEARING_ENTITY.get(), pos, state);
@@ -93,6 +105,11 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
 
     public double totalWork() {
         return totalWork;
+    }
+
+    /** Mechanical power [W] the rotor is putting into the shaft. */
+    public double outputWatts() {
+        return outputWatts;
     }
 
     public @Nullable UUID subLevelId() {
@@ -124,12 +141,77 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
         }
         keepConstraint();
         updateStress();
+        updateOutput();
+    }
+
+    // --- running backwards -----------------------------------------------------------------------------------
+
+    @Override
+    public float getGeneratedSpeed() {
+        return output;
+    }
+
+    @Override
+    public float calculateAddedStressCapacity() {
+        float capacity = Config.BEARING_OUTPUT_CAPACITY.get().floatValue();
+        this.lastCapacityProvided = capacity;
+        return capacity;
+    }
+
+    /**
+     * Decides what the shaft does when nobody else turns it: it follows the rotor, in steps so the network is
+     * not rebuilt for every wobble, and lets go when the rotor is too slow to be worth it.
+     */
+    private void updateOutput() {
+        boolean drivenFromOutside = output == 0 ? getTheoreticalSpeed() != 0 : hasSource();
+        float wanted = 0;
+        if (!drivenFromOutside && isAssembled() && constraint != null && constraint.isValid()) {
+            double rpm = lastRelativeSpin / RPM_TO_RADIANS * (facing().getAxisDirection() == Direction.AxisDirection.POSITIVE ? 1 : -1);
+            double start = output == 0 ? Config.BEARING_OUTPUT_START.get() : Config.BEARING_OUTPUT_START.get() / 2;
+            if (Math.abs(rpm) >= start) {
+                wanted = Mth.clamp(Math.round(rpm / 4.0) * 4, -256, 256);
+                // Stay put for small changes; a network is expensive to re-speed.
+                if (output != 0 && Math.signum(output) == Math.signum(wanted) && Math.abs(rpm - output) < 3) wanted = output;
+            }
+        }
+        if (outputCooldown > 0) outputCooldown--;
+        if (wanted != output && (outputCooldown == 0 || wanted == 0)) {
+            output = wanted;
+            outputCooldown = 10;
+            updateGeneratedRotation();
+        }
+        if (output == 0) {
+            loadWatts = 0;
+            return;
+        }
+        // What the machines on the shaft take is what the rotor has to give.
+        loadWatts = hasNetwork() && !isOverStressed() ? getOrCreateNetwork().calculateStress() / Config.SU_PER_WATT.get() : 0;
+    }
+
+    /** One sub-step of the rotor turning the shaft: the load on the shaft holds the rotor back. */
+    private void giveToShaft(ServerSubLevel rotor, RigidBodyHandle rotorHandle, @Nullable RigidBodyHandle parentHandle,
+                             Vector3d parentAxis, Vector3d worldAxis, double relativeSpin, double timeStep) {
+        double speed = Math.abs(relativeSpin);
+        if (loadWatts <= 0 || speed < 1.0e-3) return;
+        Vector3d rotorAxis = rotor.logicalPose().orientation().transformInverse(worldAxis, new Vector3d());
+        double inertia = Math.max(1.0, rotor.getMassTracker().getInertiaTensor().transform(rotorAxis, new Vector3d()).dot(rotorAxis));
+        double torque = Math.min(Config.BEARING_MAX_TORQUE.get(), loadWatts / Config.WATTS_PER_PHYSICS_POWER.get() / Math.max(0.5, speed));
+        // Never more than would stop the rotor within this step: a load brakes, it does not push backwards.
+        torque = Math.min(torque, inertia * speed / timeStep);
+        double signed = -Math.signum(relativeSpin) * torque;
+        rotorHandle.applyTorqueImpulse(rotorAxis.mul(signed * timeStep));
+        if (parentHandle != null) parentHandle.applyTorqueImpulse(new Vector3d(parentAxis).mul(-signed * timeStep));
+        taken += torque * speed * timeStep;
     }
 
     // --- kinetics --------------------------------------------------------------------------------------------
 
     @Override
     public float calculateStressApplied() {
+        if (output != 0) {
+            this.lastStressApplied = 0;
+            return 0;
+        }
         float applied = (float) (Double.isNaN(impact) ? Config.BEARING_BASE_IMPACT.get() : impact);
         this.lastStressApplied = applied;
         return applied;
@@ -142,6 +224,15 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
         deliveredWatts += (watts - deliveredWatts) * 0.2;
         if (deliveredWatts < 0.01) deliveredWatts = 0;
         rotorSpeed = (float) (lastRelativeSpin / RPM_TO_RADIANS);
+        double out = taken / TICK * Config.WATTS_PER_PHYSICS_POWER.get();
+        taken = 0;
+        outputWatts += (out - outputWatts) * 0.2;
+        if (outputWatts < 0.01) outputWatts = 0;
+        if (output != 0) {
+            // The rotor is driving the shaft: nothing is drawn from the network.
+            if (level.getGameTime() % 10 == 0) sendData();
+            return;
+        }
 
         double shaftSpeed = Math.abs(getTheoreticalSpeed());
         double wanted = Config.BEARING_BASE_IMPACT.get()
@@ -188,6 +279,10 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
         double relativeSpin = spin.dot(worldAxis);
         lastRelativeSpin = relativeSpin;
 
+        if (output != 0) {
+            giveToShaft(rotor, rotorHandle, parentHandle, parentAxis, worldAxis, relativeSpin, timeStep);
+            return;
+        }
         float speed = getSpeed();
         if (speed == 0) return; // no input or overstressed: let the rotor coast
 
@@ -375,6 +470,7 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
         if (clientPacket) {
             compound.putFloat("RotorSpeed", rotorSpeed);
             compound.putDouble("Delivered", deliveredWatts);
+            compound.putDouble("Output", outputWatts);
         }
     }
 
@@ -387,6 +483,7 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
         if (clientPacket) {
             rotorSpeed = compound.getFloat("RotorSpeed");
             deliveredWatts = compound.getDouble("Delivered");
+            outputWatts = compound.getDouble("Output");
         }
     }
 
@@ -410,6 +507,13 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
             .text(" ")
             .add(Component.literal(Math.round(deliveredWatts) + " W").withStyle(ChatFormatting.AQUA))
             .forGoggles(tooltip, 1);
+        if (outputWatts > 0.5) {
+            CreateLang.builder()
+                .add(Component.translatable("create_induction.bearing.output").withStyle(ChatFormatting.GRAY))
+                .text(" ")
+                .add(Component.literal(Math.round(outputWatts) + " W").withStyle(ChatFormatting.GOLD))
+                .forGoggles(tooltip, 1);
+        }
         return true;
     }
 }
