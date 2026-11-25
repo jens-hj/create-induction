@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1
+- Fixed faces of neighbouring blocks disappearing next to coils, magnets and slip rings.
+
 ## 0.2.0
 - New block: Slip Ring. Two of them face to face carry Forge Energy or Power Grid current across a turning joint, so coils can ride on the rotor with the magnets standing still around it.
 - Coils and magnets on jointed physics structures (for example riveted on at an angle with Simulated Coasters) now work at full strength.
