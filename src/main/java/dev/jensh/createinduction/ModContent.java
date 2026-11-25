@@ -34,9 +34,10 @@ public final class ModContent {
     private static final DeferredRegister<CreativeModeTab> TABS =
         DeferredRegister.create(Registries.CREATIVE_MODE_TAB, CreateInduction.ID);
 
+    /** None of these models fill their block, so they must not hide the faces of what they touch. */
     private static BlockBehaviour.Properties metal(MapColor color) {
         return BlockBehaviour.Properties.of().mapColor(color).strength(3.0f, 6.0f)
-            .requiresCorrectToolForDrops().sound(SoundType.NETHERITE_BLOCK);
+            .requiresCorrectToolForDrops().sound(SoundType.NETHERITE_BLOCK).noOcclusion();
     }
 
     public static final DeferredBlock<PermanentMagnetBlock> PERMANENT_MAGNET = BLOCKS.register("permanent_magnet",
