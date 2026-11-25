@@ -164,4 +164,79 @@ public class MotorTests {
         run(test, "coast", 16, false);
         test.runAfterDelay(630, () -> test.assertTrue(Math.abs(rpm(test)) < 1, "An unpowered rotor should have stopped, was " + rpm(test) + " rpm"));
     }
+
+    // --- brushed motor: armature on the rotor, commutator on the axis ---------------------------------------------
+
+    private static final BlockPos COMMUTATOR = HUB.above();
+    private static final BlockPos BRUSHES = COMMUTATOR.above();
+
+    private static dev.jensh.createinduction.content.commutator.CommutatorBlockEntity commutator(GameTestHelper test) {
+        BlockPos plate = ((DynamoBearingBlockEntity) test.getBlockEntity(BEARING)).platePos();
+        return (dev.jensh.createinduction.content.commutator.CommutatorBlockEntity) test.getLevel().getBlockEntity(plate.offset(COMMUTATOR.subtract(BEARING)));
+    }
+
+    /** Four coils round a commutator on the rotor, between a north and a south pole, fed through a slip ring. */
+    private static void brushed(GameTestHelper test, String name, int pairs, boolean load) {
+        test.setBlock(BEARING, ModContent.DYNAMO_BEARING.get().defaultBlockState().setValue(DynamoBearingBlock.FACING, Direction.UP));
+        test.setBlock(HUB, Blocks.IRON_BLOCK);
+        test.setBlock(COMMUTATOR, ModContent.COMMUTATOR.get().defaultBlockState().setValue(BlockStateProperties.FACING, Direction.UP));
+        for (Direction side : Direction.Plane.HORIZONTAL) {
+            test.setBlock(COMMUTATOR.relative(side), ModContent.INDUCTION_COIL.get().defaultBlockState().setValue(InductionCoilBlock.FACING, side));
+        }
+        glue(test, HUB.offset(-1, 0, -1), COMMUTATOR.offset(1, 0, 1));
+        // North pole towards the axis on the east side, south pole towards it on the west.
+        test.setBlock(COMMUTATOR.east(3), ModContent.PERMANENT_MAGNET.get().defaultBlockState().setValue(PermanentMagnetBlock.FACING, Direction.WEST));
+        test.setBlock(COMMUTATOR.west(3), ModContent.PERMANENT_MAGNET.get().defaultBlockState().setValue(PermanentMagnetBlock.FACING, Direction.WEST));
+        if (load) test.setBlock(MOTOR, create("mechanical_drill").defaultBlockState().setValue(BlockStateProperties.FACING, Direction.DOWN));
+        test.runAfterDelay(5, () -> ((DynamoBearingBlockEntity) test.getBlockEntity(BEARING)).assembleNextTick = true);
+        test.runAfterDelay(25, () -> {
+            commutator(test).setPairs(pairs);
+            test.setBlock(BRUSHES, ModContent.SLIP_RING.get().defaultBlockState().setValue(BlockStateProperties.FACING, Direction.DOWN));
+        });
+        long[] fed = new long[1];
+        for (int t = 40; t < 400; t++) {
+            int tick = t;
+            test.runAfterDelay(t, () -> {
+                var ring = (dev.jensh.createinduction.content.slipring.SlipRingBlockEntity) test.getBlockEntity(BRUSHES);
+                fed[0] += ring.energy().receiveEnergy(1000, false);
+                if (tick % 60 == 0) {
+                    DynamoBearingBlockEntity bearing = (DynamoBearingBlockEntity) test.getBlockEntity(BEARING);
+                    LOGGER.info("[induction] {} t={} rotor {} rpm, shaft {} rpm, output {} W, armature {}, linked {}, fed {} FE", name, tick,
+                        bearing.rotorSpeed(), bearing.getSpeed(), bearing.outputWatts(), commutator(test).armatureSize(), ring.isLinked(), fed[0]);
+                }
+            });
+        }
+    }
+
+    /** No redstone and no nudge: energy into the brushes and the armature starts turning. */
+    @GameTest(template = "empty", batch = "brusheda", timeoutTicks = 500)
+    public static void commutatorMakesAMotorThatStartsItself(GameTestHelper test) {
+        brushed(test, "brushed", 1, false);
+        test.runAfterDelay(400, () -> {
+            test.assertTrue(commutator(test).armatureSize() == 4, "The commutator should have found its four coils");
+            test.assertTrue(rpm(test) > 15, "The motor should be running forwards, was " + rpm(test) + " rpm");
+            test.succeed();
+        });
+    }
+
+    @GameTest(template = "empty", batch = "brushedb", timeoutTicks = 500)
+    public static void negativePoleCountReversesTheMotor(GameTestHelper test) {
+        brushed(test, "brushed reversed", -1, false);
+        test.runAfterDelay(400, () -> {
+            test.assertTrue(rpm(test) < -15, "The motor should be running backwards, was " + rpm(test) + " rpm");
+            test.succeed();
+        });
+    }
+
+    @GameTest(template = "empty", batch = "brushedc", timeoutTicks = 500)
+    public static void brushedMotorTurnsMachines(GameTestHelper test) {
+        brushed(test, "brushed loaded", 1, true);
+        test.runAfterDelay(400, () -> {
+            var drill = (com.simibubi.create.content.kinetics.base.KineticBlockEntity) test.getBlockEntity(MOTOR);
+            DynamoBearingBlockEntity bearing = (DynamoBearingBlockEntity) test.getBlockEntity(BEARING);
+            test.assertTrue(Math.abs(drill.getSpeed()) >= 8, "The drill should be turning, was " + drill.getSpeed() + " rpm");
+            test.assertTrue(bearing.outputWatts() > 5, "The rotor should be giving power to the shaft, was " + bearing.outputWatts() + " W");
+            test.succeed();
+        });
+    }
 }
