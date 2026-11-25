@@ -231,4 +231,62 @@ public final class GeneratorTests {
             test.succeed();
         });
     }
+
+    /** The bearing is not only for upright rotors: one on its side turns a rotor like a wheel. */
+    @GameTest(template = "empty", batch = "sideways", timeoutTicks = 300)
+    public static void bearingOnItsSideTurnsTheRotor(GameTestHelper test) {
+        BlockPos motor = new BlockPos(7, 4, 5);
+        BlockPos side = motor.south();
+        BlockPos hub = side.south();
+        test.setBlock(motor, BuiltInRegistries.BLOCK.get(ResourceLocation.fromNamespaceAndPath("create", "creative_motor")).defaultBlockState().setValue(CreativeMotorBlock.FACING, Direction.SOUTH));
+        test.setBlock(side, ModContent.DYNAMO_BEARING.get().defaultBlockState().setValue(DynamoBearingBlock.FACING, Direction.SOUTH));
+        test.setBlock(hub, Blocks.IRON_BLOCK);
+        test.setBlock(hub.above(), ModContent.PERMANENT_MAGNET.get().defaultBlockState().setValue(PermanentMagnetBlock.FACING, Direction.UP));
+        test.setBlock(hub.below(), ModContent.PERMANENT_MAGNET.get().defaultBlockState().setValue(PermanentMagnetBlock.FACING, Direction.DOWN));
+        BlockPos from = test.absolutePos(hub.below());
+        test.getLevel().addFreshEntity(new SuperGlueEntity(test.getLevel(), new AABB(from.getX(), from.getY(), from.getZ(), from.getX() + 1, from.getY() + 3, from.getZ() + 1)));
+        ((CreativeMotorBlockEntity) test.getBlockEntity(motor)).generatedSpeed.setValue(64);
+        test.runAfterDelay(5, () -> ((DynamoBearingBlockEntity) test.getBlockEntity(side)).assembleNextTick = true);
+        test.runAfterDelay(120, () -> {
+            DynamoBearingBlockEntity sideways = (DynamoBearingBlockEntity) test.getBlockEntity(side);
+            LOGGER.info("[induction] sideways: assembled {}, shaft {} rpm, rotor {} rpm, budget {} W", sideways.isAssembled(), sideways.getSpeed(), sideways.rotorSpeed(), sideways.powerBudget());
+            test.assertTrue(Math.abs(sideways.rotorSpeed()) > 40, "A rotor on a sideways bearing should turn, was " + sideways.rotorSpeed() + " rpm");
+            test.succeed();
+        });
+    }
+
+    /**
+     * A wheel-shaped rotor on a bearing that stands on a post, with only a trickle of power to turn it: it must
+     * neither catch on the post nor stall under its coils, just turn slowly.
+     */
+    @GameTest(template = "empty", batch = "weak", timeoutTicks = 300)
+    public static void weakDriveTurnsAMountedRotorSlowly(GameTestHelper test) {
+        BlockPos motor = new BlockPos(7, 5, 3);
+        BlockPos side = motor.south();
+        BlockPos hub = side.south(2);
+        test.setBlock(motor, BuiltInRegistries.BLOCK.get(ResourceLocation.fromNamespaceAndPath("create", "creative_motor")).defaultBlockState().setValue(CreativeMotorBlock.FACING, Direction.SOUTH));
+        test.setBlock(side, ModContent.DYNAMO_BEARING.get().defaultBlockState().setValue(DynamoBearingBlock.FACING, Direction.SOUTH));
+        for (int y = 1; y <= 4; y++) test.setBlock(side.below(y), Blocks.IRON_BLOCK);
+        test.setBlock(side.south(), Blocks.IRON_BLOCK);
+        test.setBlock(hub, Blocks.IRON_BLOCK);
+        for (Direction arm : new Direction[] {Direction.EAST, Direction.WEST, Direction.UP, Direction.DOWN}) {
+            test.setBlock(hub.relative(arm), Blocks.IRON_BLOCK);
+            test.setBlock(hub.relative(arm, 2), ModContent.PERMANENT_MAGNET.get().defaultBlockState().setValue(PermanentMagnetBlock.FACING, arm));
+        }
+        test.setBlock(hub.east(4), ModContent.INDUCTION_COIL.get().defaultBlockState().setValue(InductionCoilBlock.FACING, Direction.WEST));
+        test.setBlock(hub.west(4), ModContent.INDUCTION_COIL.get().defaultBlockState().setValue(InductionCoilBlock.FACING, Direction.EAST));
+        BlockPos from = test.absolutePos(hub.offset(-2, -2, -1));
+        test.getLevel().addFreshEntity(new SuperGlueEntity(test.getLevel(), new AABB(from.getX(), from.getY(), from.getZ(), from.getX() + 5, from.getY() + 5, from.getZ() + 2)));
+        ((CreativeMotorBlockEntity) test.getBlockEntity(motor)).generatedSpeed.setValue(-64);
+        Config.BEARING_MAX_POWER.set(97.0);
+        test.runAfterDelay(5, () -> ((DynamoBearingBlockEntity) test.getBlockEntity(side)).assembleNextTick = true);
+        test.runAfterDelay(200, () -> {
+            Config.BEARING_MAX_POWER.set(64000.0);
+            double rpm = Math.abs(((DynamoBearingBlockEntity) test.getBlockEntity(side)).rotorSpeed());
+            LOGGER.info("[induction] weak drive: rotor {} rpm of 64", rpm);
+            test.assertTrue(rpm > 5, "The rotor should turn on what power there is, was " + rpm + " rpm");
+            test.assertTrue(rpm < 55, "Loaded coils should hold a weakly driven rotor back, was " + rpm + " rpm");
+            test.succeed();
+        });
+    }
 }
