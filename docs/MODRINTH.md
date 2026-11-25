@@ -35,6 +35,10 @@ Real machines often spin the windings and keep the magnets still. That works her
 
 ![Four coils on a rotor between fixed magnets on posts, with a slip ring on the axis and wires leading away](https://raw.githubusercontent.com/jens-hj/create-induction/main/docs/gallery/inside-out.png)
 
+## Backwards: a motor
+
+The same parts make an electric motor. Leave the bearing's shaft unpowered so the rotor turns freely, feed the coils energy, and switch each coil on just after a magnet has passed it so it pushes the magnet onwards. Create's Redstone Contacts make the commutator: one hanging under each magnet, one fixed beside its path a little past each coil, with redstone from the fixed contact to its coil. Give the rotor a nudge and it runs by itself, in the direction the contacts are offset.
+
 ## Blocks
 
 **Dynamo Bearing** – Feed it rotation from behind, glue a structure to its face and click it with an empty hand. The structure becomes a physics rotor driven towards the shaft's speed. Its stress impact rises and falls with the load.
