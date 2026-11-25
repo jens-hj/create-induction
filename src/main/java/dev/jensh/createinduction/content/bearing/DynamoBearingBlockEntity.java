@@ -2,6 +2,7 @@ package dev.jensh.createinduction.content.bearing;
 
 import com.simibubi.create.content.contraptions.AssemblyException;
 import com.simibubi.create.content.contraptions.IDisplayAssemblyExceptions;
+import com.simibubi.create.content.kinetics.KineticNetwork;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
 import com.simibubi.create.foundation.utility.CreateLang;
 import dev.jensh.createinduction.Config;
@@ -58,6 +59,8 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
     /** Everything delivered since this block entity loaded [J]. */
     private double totalWork;
     private double impact = Double.NaN;
+    /** What the network can spare for the rotor [W]; refreshed a few times a second. */
+    private volatile double powerBudget = Double.MAX_VALUE;
     private int stressCooldown;
     /** Rotor speed relative to the bearing [RPM], for the goggles. */
     private float rotorSpeed;
@@ -133,12 +136,26 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
         double shaftSpeed = Math.abs(getTheoreticalSpeed());
         double wanted = Config.BEARING_BASE_IMPACT.get()
             + (shaftSpeed > 0 ? deliveredWatts * Config.SU_PER_WATT.get() / shaftSpeed : 0);
+        if (level.getGameTime() % 5 == 0) powerBudget = spareNetworkPower(shaftSpeed);
         if (--stressCooldown > 0) return;
         if (!Double.isNaN(impact) && Math.abs(wanted - impact) <= 0.05 * impact + 0.05) return;
         impact = wanted;
         stressCooldown = 10;
         if (hasNetwork()) getOrCreateNetwork().updateStressFor(this, calculateStressApplied());
         sendData();
+    }
+
+    /**
+     * Mechanical power [W] the kinetic network can still give this bearing. The drive never takes more, so a weak
+     * source turns a loaded rotor slowly instead of overstressing the whole network.
+     */
+    private double spareNetworkPower(double shaftSpeed) {
+        if (!hasNetwork() || shaftSpeed <= 0) return 0;
+        KineticNetwork network = getOrCreateNetwork();
+        double own = network.getActualStressOf(this);
+        double idle = Config.BEARING_BASE_IMPACT.get() * shaftSpeed;
+        double spare = network.calculateCapacity() - (network.calculateStress() - own) - idle;
+        return Math.max(0, spare * 0.95 / Config.SU_PER_WATT.get());
     }
 
     /**
@@ -168,7 +185,7 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
         Vector3d rotorAxis = rotor.logicalPose().orientation().transformInverse(worldAxis, new Vector3d());
         double inertia = Math.max(1.0, rotor.getMassTracker().getInertiaTensor().transform(rotorAxis, new Vector3d()).dot(rotorAxis));
         double limit = Math.min(Config.BEARING_MAX_TORQUE.get(),
-            Config.BEARING_MAX_POWER.get() / Config.WATTS_PER_PHYSICS_POWER.get() / Math.max(1.0, Math.abs(relativeSpin)));
+            Math.min(Config.BEARING_MAX_POWER.get(), powerBudget) / Config.WATTS_PER_PHYSICS_POWER.get() / Math.max(1.0, Math.abs(relativeSpin)));
         double torque = Mth.clamp(Config.BEARING_GAIN.get() * inertia * (target - relativeSpin), -limit, limit);
 
         rotorHandle.applyTorqueImpulse(rotorAxis.mul(torque * timeStep));
