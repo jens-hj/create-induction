@@ -5,3 +5,6 @@ license="MIT"
 modId="create_induction_test"
 version="1.0"
 displayName="Create: Induction Tests"
+
+[[mixins]]
+config="create_induction_test.mixins.json"
