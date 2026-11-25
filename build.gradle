@@ -122,6 +122,8 @@ tasks.named('runGameTestServer') {
     doFirst {
         prepareRun(gameTestDirectory)
         new File(gameTestDirectory, 'world').deleteDir()
+        // Server configs outlive the world; tests must see the built-in defaults.
+        new File(gameTestDirectory, 'config/create_induction-server.toml').delete()
     }
 }
 tasks.named('runShowcase') {
