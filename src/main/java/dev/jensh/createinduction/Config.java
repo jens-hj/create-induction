@@ -20,6 +20,7 @@ public final class Config {
     public static final ModConfigSpec.DoubleValue SLIP_RING_REACH;
     public static final ModConfigSpec.DoubleValue SLIP_RING_RESISTANCE;
     public static final ModConfigSpec.DoubleValue COMMUTATOR_VOLTAGE;
+    public static final ModConfigSpec.DoubleValue COMMUTATOR_BRUSH_CURRENT;
 
     public static final ModConfigSpec.DoubleValue BEARING_GAIN;
     public static final ModConfigSpec.DoubleValue BEARING_MAX_TORQUE;
@@ -109,6 +110,9 @@ public final class Config {
             .comment("Voltage [V] a Commutator puts across each coil of its armature. Higher means a faster motor;",
                 "the current is still limited to the coil's drive current.")
             .defineInRange("commutatorVoltage", 12.0, 0.1, 10000.0);
+        COMMUTATOR_BRUSH_CURRENT = builder
+            .comment("Most current [A] the brushes of a Commutator draw from a Power Grid circuit.")
+            .defineInRange("brushCurrent", 16.0, 0.1, 10000.0);
         builder.pop();
 
         SPEC = builder.build();

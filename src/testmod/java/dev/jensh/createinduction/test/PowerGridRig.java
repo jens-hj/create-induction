@@ -34,6 +34,10 @@ final class PowerGridRig {
         if (!level.addFreshEntity(entity)) throw new IllegalStateException("Wire did not spawn");
     }
 
+    static double batteryEnergy(net.minecraft.server.level.ServerLevel level, BlockPos pos) {
+        return level.getBlockEntity(pos) instanceof org.patryk3211.powergrid.electricity.battery.BatteryBlockEntity battery ? battery.getEnergy() : Double.NaN;
+    }
+
     static String battery(net.minecraft.server.level.ServerLevel level, BlockPos pos) {
         if (level.getBlockEntity(pos) instanceof org.patryk3211.powergrid.electricity.battery.BatteryBlockEntity battery) {
             return battery.getEnergy() + " of " + battery.getCapacity();

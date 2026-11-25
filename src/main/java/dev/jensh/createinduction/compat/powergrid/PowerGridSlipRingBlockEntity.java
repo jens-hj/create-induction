@@ -1,5 +1,9 @@
 package dev.jensh.createinduction.compat.powergrid;
 
+import org.patryk3211.powergrid.electricity.sim.node.VoltageSourceCoupling;
+import org.jetbrains.annotations.Nullable;
+import net.minecraft.util.Mth;
+import dev.jensh.createinduction.content.commutator.CommutatorBlockEntity;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 import dev.jensh.createinduction.Config;
 import dev.jensh.createinduction.CreateInduction;
@@ -42,6 +46,10 @@ public class PowerGridSlipRingBlockEntity extends SlipRingBlockEntity implements
     private ElectricBehaviour electric;
     private final ElectricWire[] brushes = new ElectricWire[2];
     private int retry;
+    private static final float OPEN = 1.0e6f, PROBE = 1.0e3f, MINIMUM = 0.25f;
+    private @Nullable VoltageSourceCoupling intake;
+    private float intakeResistance = OPEN;
+    private double pending;
 
     public PowerGridSlipRingBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -71,6 +79,41 @@ public class PowerGridSlipRingBlockEntity extends SlipRingBlockEntity implements
     @Override
     public void buildCircuit(CircuitBuilder builder) {
         builder.setTerminalCount(2);
+        // Open unless this ring is the brush box of a commutator; then it is the motor as the circuit sees it.
+        intake = builder.addInternalNode(VoltageSourceCoupling.class, builder.terminalNode(0), builder.terminalNode(1),
+            Float.valueOf(OPEN));
+    }
+
+    /**
+     * Brushes on a commutator: draw from the circuit what the armature can use and hand it across. The load is
+     * a resistance chosen each tick so that, at the voltage found on the terminals, it takes just that power.
+     */
+    private void feedCommutator() {
+        if (intake == null) return;
+        double current = intake.getCurrent();
+        if (Double.isNaN(current)) current = 0;
+        double volts = Math.abs(current) * intakeResistance;
+        double watts = current * current * intakeResistance;
+        if (intakeResistance < OPEN) {
+            pending += watts * Config.FE_PER_WATT_TICK.get();
+            int whole = (int) Math.min(pending, Integer.MAX_VALUE);
+            if (whole > 0) pending -= energy().receiveEnergy(whole, false);
+            pending = Math.min(pending, 1); // what the armature would not take was lost as heat in the brushes
+        }
+        double wanted = energy().receiveEnergy(Integer.MAX_VALUE, true) / Config.FE_PER_WATT_TICK.get();
+        // Never less resistance than keeps the brush current within what brushes carry.
+        float floor = (float) Math.max(MINIMUM, volts / Config.COMMUTATOR_BRUSH_CURRENT.get());
+        intakeResistance = wanted <= 0 || volts < 0.01 ? (wanted <= 0 ? OPEN : PROBE)
+            : (float) Mth.clamp(volts * volts / wanted, floor, OPEN);
+        intake.setResistance(intakeResistance);
+        intake.setVoltage(0);
+    }
+
+    private void closeIntake() {
+        if (intake == null || intakeResistance == OPEN) return;
+        intakeResistance = OPEN;
+        intake.setResistance(OPEN);
+        pending = 0;
     }
 
     @Override
@@ -107,7 +150,11 @@ public class PowerGridSlipRingBlockEntity extends SlipRingBlockEntity implements
 
     @Override
     protected void whileLinked() {
-        // Only another wired ring has terminals to join; a commutator takes Forge Energy.
+        // Only another wired ring has terminals to join; a commutator is fed instead.
+        if (partner() instanceof CommutatorBlockEntity) {
+            feedCommutator();
+            return;
+        }
         if (!(partner() instanceof PowerGridSlipRingBlockEntity)) return;
         if (!owns() || brushes[0] != null || --retry > 0) return;
         retry = 20;
@@ -124,6 +171,7 @@ public class PowerGridSlipRingBlockEntity extends SlipRingBlockEntity implements
 
     @Override
     protected void onUnlinked() {
+        closeIntake();
         dropBrushes();
     }
 

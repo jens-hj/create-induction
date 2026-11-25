@@ -177,6 +177,10 @@ public class MotorTests {
 
     /** Four coils round a commutator on the rotor, between a north and a south pole, fed through a slip ring. */
     private static void brushed(GameTestHelper test, String name, int pairs, boolean load) {
+        brushed(test, name, pairs, load, true);
+    }
+
+    private static void brushed(GameTestHelper test, String name, int pairs, boolean load, boolean feed) {
         test.setBlock(BEARING, ModContent.DYNAMO_BEARING.get().defaultBlockState().setValue(DynamoBearingBlock.FACING, Direction.UP));
         test.setBlock(HUB, Blocks.IRON_BLOCK);
         test.setBlock(COMMUTATOR, ModContent.COMMUTATOR.get().defaultBlockState().setValue(BlockStateProperties.FACING, Direction.UP));
@@ -198,7 +202,7 @@ public class MotorTests {
             int tick = t;
             test.runAfterDelay(t, () -> {
                 var ring = (dev.jensh.createinduction.content.slipring.SlipRingBlockEntity) test.getBlockEntity(BRUSHES);
-                fed[0] += ring.energy().receiveEnergy(1000, false);
+                if (feed) fed[0] += ring.energy().receiveEnergy(1000, false);
                 if (tick % 60 == 0) {
                     DynamoBearingBlockEntity bearing = (DynamoBearingBlockEntity) test.getBlockEntity(BEARING);
                     LOGGER.info("[induction] {} t={} rotor {} rpm, shaft {} rpm, output {} W, armature {}, linked {}, fed {} FE", name, tick,
@@ -236,6 +240,32 @@ public class MotorTests {
             DynamoBearingBlockEntity bearing = (DynamoBearingBlockEntity) test.getBlockEntity(BEARING);
             test.assertTrue(Math.abs(drill.getSpeed()) >= 8, "The drill should be turning, was " + drill.getSpeed() + " rpm");
             test.assertTrue(bearing.outputWatts() > 5, "The rotor should be giving power to the shaft, was " + bearing.outputWatts() + " W");
+            test.succeed();
+        });
+    }
+
+    /** With Power Grid the brushes are wired up instead: a battery on the slip ring's terminals runs the motor. */
+    @GameTest(template = "empty", batch = "brushedd", timeoutTicks = 500)
+    public static void brushedMotorRunsOffAPowerGridBattery(GameTestHelper test) {
+        if (!net.neoforged.fml.ModList.get().isLoaded("powergrid")) {
+            test.succeed();
+            return;
+        }
+        brushed(test, "brushed grid", 1, false, false);
+        BlockPos battery = BRUSHES.offset(3, 0, 2);
+        double[] before = new double[1];
+        test.runAfterDelay(30, () -> {
+            test.setBlock(battery, BuiltInRegistries.BLOCK.get(ResourceLocation.fromNamespaceAndPath("powergrid", "battery")));
+            for (int terminal = 0; terminal < 2; terminal++) {
+                PowerGridRig.wire(test.getLevel(), test.absolutePos(BRUSHES), terminal, test.absolutePos(battery), terminal);
+            }
+            before[0] = PowerGridRig.batteryEnergy(test.getLevel(), test.absolutePos(battery));
+        });
+        test.runAfterDelay(400, () -> {
+            double used = before[0] - PowerGridRig.batteryEnergy(test.getLevel(), test.absolutePos(battery));
+            LOGGER.info("[induction] brushed grid: rotor {} rpm, battery gave {} J of {}", rpm(test), used, before[0]);
+            test.assertTrue(Math.abs(rpm(test)) > 15, "The motor should run off the battery, was " + rpm(test) + " rpm");
+            test.assertTrue(used > 100, "The battery should have been drawn on, gave " + used);
             test.succeed();
         });
     }
