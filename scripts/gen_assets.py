@@ -316,6 +316,17 @@ def slip_side():
     return c.image
 
 
+def commutator_side():
+    c = Canvas(57)
+    c.image.paste(slip_side())
+    for y in range(3, 8):  # copper bars along the axis, with dark mica between them
+        for x in range(3, 13):
+            along = (x - 3) / 9
+            shade = 1.2 if along < 0.15 else -2.2 if along > 0.85 else -1.0 if along > 0.65 else 0
+            c.put(x, y, tone(IRON, 1) if x in (5, 8, 11) else tone(COPPER, 6.4 + shade + 0.5 * noise(x, y, 58) - (y == 7)))
+    return c.image
+
+
 def slip_face():
     c = Canvas(53)
     c.plate(0, 0, 15, 15, ANDESITE, 6, 0.8, rise=3, drop=4)  # shoulder of the body
@@ -386,6 +397,14 @@ SLIP_RING = model(
         element([4, 13, 4], [12, 16, 12], nsew="side", u="face"),
     ])
 
+COMMUTATOR = model(
+    {"side": texture("commutator_side"), "face": texture("slip_ring_face"), "back": texture("dynamo_bearing_bottom")},
+    [
+        element([0, 0, 0], [16, 8, 16], nsew="side", u="face", d="back"),
+        element([3, 8, 3], [13, 13, 13], nsew="side", u="face"),
+        element([4, 13, 4], [12, 16, 12], nsew="side", u="face"),
+    ])
+
 BEARING_TEXTURES = {"side": texture("dynamo_bearing_side"), "top": texture("dynamo_bearing_top"),
                     "inner": texture("dynamo_bearing_inner"), "bottom": texture("dynamo_bearing_bottom")}
 BEARING_BODY = [
@@ -414,6 +433,7 @@ def main():
         "dynamo_bearing_bottom": bearing_bottom(),
         "slip_ring_side": slip_side(),
         "slip_ring_face": slip_face(),
+        "commutator_side": commutator_side(),
     }
     for name, image in textures.items():
         image.save(TEXTURES / f"{name}.png")
@@ -421,6 +441,7 @@ def main():
         "induction_coil": COIL,
         "permanent_magnet": MAGNET,
         "slip_ring": SLIP_RING,
+        "commutator": COMMUTATOR,
         "dynamo_bearing": model(BEARING_TEXTURES, BEARING_BODY + BEARING_PLATE),
         "dynamo_bearing_base": model(BEARING_TEXTURES, BEARING_BODY),
         "dynamo_bearing_plate": model(BEARING_TEXTURES, BEARING_PLATE),

@@ -107,6 +107,8 @@ public class PowerGridSlipRingBlockEntity extends SlipRingBlockEntity implements
 
     @Override
     protected void whileLinked() {
+        // Only another wired ring has terminals to join; a commutator takes Forge Energy.
+        if (!(partner() instanceof PowerGridSlipRingBlockEntity)) return;
         if (!owns() || brushes[0] != null || --retry > 0) return;
         retry = 20;
         try {

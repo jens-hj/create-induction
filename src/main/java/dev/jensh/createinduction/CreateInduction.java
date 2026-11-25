@@ -41,5 +41,7 @@ public final class CreateInduction {
             (coil, side) -> coil.energy());
         event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModContent.SLIP_RING_ENTITY.get(),
             (ring, side) -> ring.energy());
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK, ModContent.COMMUTATOR_ENTITY.get(),
+            (ring, side) -> ring.energy());
     }
 }

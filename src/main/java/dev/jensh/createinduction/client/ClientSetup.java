@@ -21,7 +21,7 @@ public final class ClientSetup {
     @SubscribeEvent
     static void clientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
-            for (var item : java.util.List.of(ModContent.PERMANENT_MAGNET_ITEM.get(), ModContent.INDUCTION_COIL_ITEM.get(), ModContent.DYNAMO_BEARING_ITEM.get(), ModContent.SLIP_RING_ITEM.get())) {
+            for (var item : java.util.List.of(ModContent.PERMANENT_MAGNET_ITEM.get(), ModContent.INDUCTION_COIL_ITEM.get(), ModContent.DYNAMO_BEARING_ITEM.get(), ModContent.SLIP_RING_ITEM.get(), ModContent.COMMUTATOR_ITEM.get())) {
                 com.simibubi.create.foundation.item.TooltipModifier.REGISTRY.register(item,
                     new com.simibubi.create.foundation.item.ItemDescription.Modifier(item, net.createmod.catnip.lang.FontHelper.Palette.STANDARD_CREATE));
             }

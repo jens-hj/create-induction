@@ -58,7 +58,15 @@ public final class ModContent {
     public static final DeferredItem<BlockItem> INDUCTION_COIL_ITEM = ITEMS.registerSimpleBlockItem(INDUCTION_COIL);
     public static final DeferredItem<BlockItem> DYNAMO_BEARING_ITEM = ITEMS.registerSimpleBlockItem(DYNAMO_BEARING);
 
+    public static final DeferredBlock<dev.jensh.createinduction.content.commutator.CommutatorBlock> COMMUTATOR = BLOCKS.register("commutator",
+        () -> new dev.jensh.createinduction.content.commutator.CommutatorBlock(metal(MapColor.COLOR_ORANGE).sound(SoundType.COPPER)));
     public static final DeferredItem<BlockItem> SLIP_RING_ITEM = ITEMS.registerSimpleBlockItem(SLIP_RING);
+    public static final DeferredItem<BlockItem> COMMUTATOR_ITEM = ITEMS.registerSimpleBlockItem(COMMUTATOR);
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<dev.jensh.createinduction.content.commutator.CommutatorBlockEntity>> COMMUTATOR_ENTITY =
+        BLOCK_ENTITIES.register("commutator", () -> BlockEntityType.Builder
+            .<dev.jensh.createinduction.content.commutator.CommutatorBlockEntity>of(
+                (pos, state) -> new dev.jensh.createinduction.content.commutator.CommutatorBlockEntity(ModContent.COMMUTATOR_ENTITY.get(), pos, state),
+                COMMUTATOR.get()).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SlipRingBlockEntity>> SLIP_RING_ENTITY =
         BLOCK_ENTITIES.register("slip_ring", () -> BlockEntityType.Builder
@@ -85,6 +93,7 @@ public final class ModContent {
                 output.accept(INDUCTION_COIL_ITEM.get());
                 output.accept(PERMANENT_MAGNET_ITEM.get());
                 output.accept(SLIP_RING_ITEM.get());
+                output.accept(COMMUTATOR_ITEM.get());
             })
             .build());
 

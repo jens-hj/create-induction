@@ -19,6 +19,7 @@ public final class Config {
 
     public static final ModConfigSpec.DoubleValue SLIP_RING_REACH;
     public static final ModConfigSpec.DoubleValue SLIP_RING_RESISTANCE;
+    public static final ModConfigSpec.DoubleValue COMMUTATOR_VOLTAGE;
 
     public static final ModConfigSpec.DoubleValue BEARING_GAIN;
     public static final ModConfigSpec.DoubleValue BEARING_MAX_TORQUE;
@@ -104,6 +105,10 @@ public final class Config {
         SLIP_RING_RESISTANCE = builder
             .comment("Resistance [ohm] of each brush contact in a Power Grid circuit.")
             .defineInRange("resistance", 0.05, 0.0001, 1000.0);
+        COMMUTATOR_VOLTAGE = builder
+            .comment("Voltage [V] a Commutator puts across each coil of its armature. Higher means a faster motor;",
+                "the current is still limited to the coil's drive current.")
+            .defineInRange("commutatorVoltage", 12.0, 0.1, 10000.0);
         builder.pop();
 
         SPEC = builder.build();

@@ -33,6 +33,7 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
+import org.joml.Vector3dc;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +50,11 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
 
     /** Stored energy [FE], kept fractional so small sub-step amounts are not rounded away. */
     private double stored;
+    private @Nullable Commutation commutation;
+    private long commutationTick;
+    /** What the commutator asks for in the current sub-step, and whether the coil is following it. */
+    private double command;
+    private boolean commanded;
     /** The part of {@link #stored} that came in from outside rather than from generating. */
     private double imported;
     private final IEnergyStorage energy = new CoilEnergy();
@@ -194,6 +200,21 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
 
     /** The current [A] this coil wants to carry this sub-step. Positive makes the facing side a north pole. */
     protected double desiredCurrent(double emf, double timeStep) {
+        if (command != 0 && signal == 0) {
+            // Switched by a commutator: run as an electromagnet of the polarity it calls for, as long as there is
+            // energy for it. Without energy the coil is simply a generator again.
+            // The supply is a voltage, not a current: the magnets' back-EMF works against it, so the current, and
+            // with it the torque and the cost, falls away as the rotor nears the speed that voltage can sustain.
+            double volts = command * Config.COMMUTATOR_VOLTAGE.get();
+            double limit = Config.DRIVE_CURRENT.get();
+            double drive = Mth.clamp((volts + emf) / Config.COIL_RESISTANCE.get(), -limit, limit);
+            if (drive * volts <= 0) drive = 0; // overrun: brushes pass nothing back
+            double cost = Induction.drivePower(drive, emf, Config.COIL_RESISTANCE.get()) * fePerWattSecond() * timeStep;
+            if (stored >= cost) {
+                commanded = true;
+                return drive;
+            }
+        }
         if (signal > 0) {
             double drive = signal / 15.0 * Config.DRIVE_CURRENT.get();
             double cost = Induction.drivePower(drive, emf, Config.COIL_RESISTANCE.get()) * fePerWattSecond() * timeStep;
@@ -209,7 +230,7 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
      * @return electrical power [W]; positive when delivered to the load, negative when drawn from the supply
      */
     protected double settle(double emf, double current, double timeStep) {
-        if (signal > 0) {
+        if (signal > 0 || commanded) {
             double drawn = Induction.drivePower(current, emf, Config.COIL_RESISTANCE.get());
             stored = Math.max(0, stored - drawn * fePerWattSecond() * timeStep);
             return -drawn;
@@ -227,11 +248,25 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
     }
 
     protected boolean isDriven() {
-        return signal > 0;
+        return signal > 0 || commanded;
+    }
+
+    /** Something that switches this coil's current in step with a turning joint. */
+    public interface Commutation {
+        /** @return the share of the full drive current to carry right now, from -1 to 1; positive makes the face a north pole */
+        double factor(Vector3dc coilWorld, CoilPhysics.Step step);
+    }
+
+    /** Puts this coil under a commutator's control for the next couple of ticks; call every tick to keep it. */
+    public void commutate(Commutation source) {
+        commutation = source;
+        commutationTick = level == null ? 0 : level.getGameTime();
     }
 
     void physicsStep(CoilPhysics.Step step) {
         if (level == null) return;
+        commanded = false;
+        command = 0;
         double timeStep = step.timeStep;
         seconds += timeStep;
         if (magnets.isEmpty()) {
@@ -251,6 +286,11 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
             coilBody.pose.transformPosition(coilLocal, coilWorld);
             coilBody.orientation.transform(axis);
             coilBody.velocityAt(coilWorld, coilVelocity);
+        }
+
+        if (commutation != null) {
+            if (level.getGameTime() - commutationTick > 2) commutation = null;
+            else command = commutation.factor(coilWorld, step);
         }
 
         double range = Config.RANGE.get();

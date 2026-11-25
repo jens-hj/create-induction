@@ -124,12 +124,12 @@ public class SlipRingBlockEntity extends SmartBlockEntity implements IHaveGoggle
 
     // --- contact -------------------------------------------------------------------------------------------
 
-    private Direction facing() {
+    protected Direction facing() {
         return getBlockState().getValue(BlockStateProperties.FACING);
     }
 
     /** World position of the middle of the contact face, and the direction it points. */
-    private void contact(Vector3d point, Vector3d normal) {
+    protected void contact(Vector3d point, Vector3d normal) {
         Direction facing = facing();
         normal.set(facing.getStepX(), facing.getStepY(), facing.getStepZ());
         point.set(worldPosition.getX() + 0.5, worldPosition.getY() + 0.5, worldPosition.getZ() + 0.5).fma(0.5, normal);
@@ -183,7 +183,7 @@ public class SlipRingBlockEntity extends SmartBlockEntity implements IHaveGoggle
     // --- energy --------------------------------------------------------------------------------------------
 
     /** Offers energy to everything around this ring except through its contact face. */
-    private int distribute(int amount, boolean simulate) {
+    protected int distribute(int amount, boolean simulate) {
         int left = amount;
         Direction facing = facing();
         for (Direction side : Direction.values()) {
@@ -266,7 +266,7 @@ public class SlipRingBlockEntity extends SmartBlockEntity implements IHaveGoggle
 
     @Override
     public boolean addToGoggleTooltip(List<Component> tooltip, boolean isPlayerSneaking) {
-        CreateLang.builder().add(Component.translatable("create_induction.slip_ring.title")).forGoggles(tooltip);
+        CreateLang.builder().add(Component.translatable(titleKey())).forGoggles(tooltip);
         CreateLang.builder().add(Component.translatable("create_induction.slip_ring." + (clientLinked ? "linked" : "open")))
             .style(clientLinked ? ChatFormatting.GREEN : ChatFormatting.DARK_GRAY).forGoggles(tooltip, 1);
         if (clientLinked && showsEnergyRate()) {
@@ -274,6 +274,10 @@ public class SlipRingBlockEntity extends SmartBlockEntity implements IHaveGoggle
                 .space().add(Component.literal(Math.round(rate) + " FE/t").withStyle(ChatFormatting.AQUA)).forGoggles(tooltip, 1);
         }
         return true;
+    }
+
+    protected String titleKey() {
+        return "create_induction.slip_ring.title";
     }
 
     protected boolean showsEnergyRate() {

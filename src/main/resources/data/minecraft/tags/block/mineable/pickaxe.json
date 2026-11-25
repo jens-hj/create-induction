@@ -5,6 +5,7 @@
     "create_induction:induction_coil",
     "create_induction:dynamo_bearing",
     "create_induction:dynamo_bearing_plate",
-    "create_induction:slip_ring"
+    "create_induction:slip_ring",
+    "create_induction:commutator"
   ]
 }
