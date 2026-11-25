@@ -292,7 +292,7 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
         double current = linkCount == 0 ? idleCurrent(emf, timeStep) : desiredCurrent(emf, timeStep);
         if (current != 0 && linkCount > 0) {
             double strength = gain * current / Config.WATTS_PER_PHYSICS_POWER.get();
-            double limit = accelerationLimit(strength, coilBody, coilLocal);
+            double limit = accelerationLimit(step, strength, coilBody, coilWorld);
             current *= limit;
             applyForces(strength * limit, coilBody, coilLocal, timeStep);
         }
@@ -322,24 +322,22 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
     }
 
     /** Scale (0..1] that keeps every body under the configured acceleration for this sub-step. */
-    private double accelerationLimit(double strength, @Nullable CoilPhysics.Body coilBody, Vector3d coilLocal) {
+    /** Scales the current down where it would throw a body about harder than the configured acceleration. */
+    private double accelerationLimit(CoilPhysics.Step step, double strength, @Nullable CoilPhysics.Body coilBody, Vector3d coilWorld) {
         double maxAcceleration = Config.MAX_ACCELERATION.get();
         double limit = 1;
         Vector3d force = new Vector3d();
-        Vector3d local = new Vector3d();
         for (int i = 0; i < linkCount; i++) {
             Link link = links.get(i);
             link.pair.forceOnCoil(force).mul(strength);
             double magnitude = force.length();
             if (magnitude < 1.0e-9) continue;
             if (coilBody != null) {
-                coilBody.orientation.transformInverse(force, local);
-                double acceleration = magnitude * coilBody.subLevel.getMassTracker().getInverseNormalMass(coilLocal, local);
+                double acceleration = magnitude * step.inverseMass(coilBody, coilWorld, force);
                 if (acceleration > maxAcceleration) limit = Math.min(limit, maxAcceleration / acceleration);
             }
             if (link.body != null) {
-                link.body.orientation.transformInverse(force, local);
-                double acceleration = magnitude * link.body.subLevel.getMassTracker().getInverseNormalMass(link.local, local);
+                double acceleration = magnitude * step.inverseMass(link.body, link.world, force);
                 if (acceleration > maxAcceleration) limit = Math.min(limit, maxAcceleration / acceleration);
             }
         }

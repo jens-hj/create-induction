@@ -1,6 +1,8 @@
 package dev.jensh.createinduction.content.coil;
 
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
+import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
+import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
@@ -37,7 +39,7 @@ public final class CoilPhysics {
     public static void physicsTick(SubLevelPhysicsSystem system, double timeStep) {
         Set<InductionCoilBlockEntity> coils = COILS.get(system.getLevel());
         if (coils == null || coils.isEmpty()) return;
-        Step step = new Step(timeStep);
+        Step step = new Step(system.getLevel(), timeStep);
         List<InductionCoilBlockEntity> snapshot = new ArrayList<>(coils);
         for (InductionCoilBlockEntity coil : snapshot) {
             if (coil.isRemoved()) {
@@ -53,8 +55,55 @@ public final class CoilPhysics {
         public final double timeStep;
         private final Map<SubLevel, Body> bodies = new HashMap<>();
 
-        Step(double timeStep) {
+        private final Map<Body, Carrier> carriers = new HashMap<>();
+        private final Level level;
+        private @Nullable List<Body> everything;
+
+        Step(Level level, double timeStep) {
+            this.level = level;
             this.timeStep = timeStep;
+        }
+
+        /**
+         * Inverse effective mass felt when pushing {@code body} at a world point along a world direction. A body
+         * that moves as one with something else (riveted, welded, resting on the ground) is as hard to push as
+         * whatever carries it, however little it weighs itself.
+         */
+        public double inverseMass(Body body, Vector3dc worldPoint, Vector3dc worldDirection) {
+            Carrier carrier = carriers.computeIfAbsent(body, this::findCarrier);
+            if (carrier.world) return 0;
+            Body target = carrier.body != null ? carrier.body : body;
+            Vector3d point = target.pose.transformPositionInverse(worldPoint, new Vector3d());
+            Vector3d direction = target.orientation.transformInverse(worldDirection, new Vector3d());
+            return target.subLevel.getMassTracker().getInverseNormalMass(point, direction);
+        }
+
+        private Carrier findCarrier(Body body) {
+            if (body.linearVelocity.length() < 0.02 && body.angularVelocity.length() < 0.02) return Carrier.WORLD;
+            if (everything == null) {
+                everything = new ArrayList<>();
+                ServerSubLevelContainer container = SubLevelContainer.getContainer((net.minecraft.server.level.ServerLevel) level);
+                if (container != null) {
+                    for (ServerSubLevel other : container.getAllSubLevels()) {
+                        Body otherBody = body(other);
+                        if (otherBody != null) everything.add(otherBody);
+                    }
+                }
+            }
+            double inverseMass = body.subLevel.getMassTracker().getInverseMass();
+            Vector3d there = new Vector3d();
+            Body best = null;
+            for (Body other : everything) {
+                if (other == body) continue;
+                double otherInverseMass = other.subLevel.getMassTracker().getInverseMass();
+                if (otherInverseMass >= inverseMass) continue; // only something heavier can carry this
+                if (best != null && otherInverseMass >= best.subLevel.getMassTracker().getInverseMass()) continue;
+                if (other.angularVelocity.distance(body.angularVelocity) > 0.03 + 0.03 * body.angularVelocity.length()) continue;
+                other.velocityAt(body.centerOfMass, there);
+                if (there.distance(body.linearVelocity) > 0.08 + 0.03 * body.linearVelocity.length()) continue;
+                best = other;
+            }
+            return best == null ? Carrier.NONE : new Carrier(false, best);
         }
 
         /** @return the moving body for a sub-level, or {@code null} for the static world */
@@ -62,6 +111,11 @@ public final class CoilPhysics {
             if (!(subLevel instanceof ServerSubLevel server) || server.isRemoved()) return null;
             return bodies.computeIfAbsent(subLevel, key -> Body.of(server));
         }
+    }
+
+    private record Carrier(boolean world, @Nullable Body body) {
+        static final Carrier WORLD = new Carrier(true, null);
+        static final Carrier NONE = new Carrier(false, null);
     }
 
     /** Snapshot of a sub-level's rigid body in world space. */
