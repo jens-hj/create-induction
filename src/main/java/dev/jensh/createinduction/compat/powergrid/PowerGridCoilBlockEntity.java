@@ -46,6 +46,9 @@ public class PowerGridCoilBlockEntity extends InductionCoilBlockEntity implement
     private @Nullable VoltageSourceCoupling source;
     /** Current leaving the positive terminal [A], as solved by the circuit. */
     private double circuitCurrent;
+    /** Generating, but the circuit sits at a higher voltage than the coil makes: the rectifier is shut. */
+    private boolean blocking;
+    private static final float BLOCKING_RESISTANCE = 1.0e6f;
 
     public PowerGridCoilBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -111,15 +114,21 @@ public class PowerGridCoilBlockEntity extends InductionCoilBlockEntity implement
     @Override
     protected void tickFinished(double meanEmf, double rmsEmf) {
         if (source == null) return;
-        source.setResistance(resistance());
         if (!wired()) {
+            blocking = false;
+            source.setResistance(resistance());
             source.setVoltage(0);
             circuitCurrent = 0;
             return;
         }
         circuitCurrent = -source.getCurrent();
         if (Double.isNaN(circuitCurrent)) circuitCurrent = 0;
-        // Driven: the supply works against the magnets' back-EMF. Generating: the rectified EMF feeds the circuit.
+        // Driven: the supply works against the magnets' back-EMF. Generating: the rectified EMF feeds the circuit,
+        // and like any rectifier it lets nothing back in, so a battery cannot drain itself through an idle coil.
+        if (isDriven()) blocking = false;
+        else if (circuitCurrent < 0) blocking = true;
+        else if (circuitCurrent > 0) blocking = false;
+        source.setResistance(blocking ? BLOCKING_RESISTANCE : resistance());
         source.setVoltage(isDriven() ? -meanEmf : rmsEmf);
     }
 
