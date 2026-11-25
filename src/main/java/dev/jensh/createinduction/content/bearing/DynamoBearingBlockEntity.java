@@ -48,6 +48,11 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
     public boolean assembleNextTick;
     private @Nullable AssemblyException lastException;
     private @Nullable UUID subLevelId;
+    /**
+     * Gap [blocks] between the bearing and its rotor. Blocks that sit flush beside a turning rotor grab it, so the
+     * rotor stands off a little from the bearing and from whatever the bearing is mounted on.
+     */
+    private static final double CLEARANCE = 0.001;
     private @Nullable BlockPos platePos;
     private @Nullable RotaryConstraintHandle constraint;
     /** Set while Sable is moving this block into another level, so removal does not tear the rotor off. */
@@ -92,6 +97,11 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
 
     public @Nullable UUID subLevelId() {
         return subLevelId;
+    }
+
+    /** Mechanical power [W] the network could still spare at the last check. */
+    public double powerBudget() {
+        return powerBudget;
     }
 
     public @Nullable BlockPos platePos() {
@@ -309,7 +319,7 @@ public class DynamoBearingBlockEntity extends KineticBlockEntity implements IDis
         Vector3d plateNormal = new Vector3d(plateFacing.getStepX(), plateFacing.getStepY(), plateFacing.getStepZ());
         RotaryConstraintConfiguration configuration = new RotaryConstraintConfiguration(
             new Vector3d(anchor.x, anchor.y, anchor.z),
-            new Vector3d(plateAnchor.x, plateAnchor.y, plateAnchor.z).fma(-0.001, plateNormal),
+            new Vector3d(plateAnchor.x, plateAnchor.y, plateAnchor.z).fma(-CLEARANCE, plateNormal),
             normal, plateNormal);
 
         ServerSubLevelContainer container = SubLevelContainer.getContainer(serverLevel);
