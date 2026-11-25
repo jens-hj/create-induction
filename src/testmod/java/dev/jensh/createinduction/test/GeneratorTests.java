@@ -34,10 +34,10 @@ public final class GeneratorTests {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final BlockPos MOTOR = new BlockPos(7, 1, 7);
     private static final BlockPos BEARING = new BlockPos(7, 2, 7);
-    private static final BlockPos HUB = new BlockPos(7, 3, 7);
+    static final BlockPos HUB = new BlockPos(7, 3, 7);
 
     /** Motor, bearing and a two-magnet rotor; returns nothing, look blocks up by position. */
-    private static void buildRotor(GameTestHelper test, int rpm) {
+    static void buildRotor(GameTestHelper test, int rpm) {
         test.setBlock(MOTOR, BuiltInRegistries.BLOCK.get(ResourceLocation.fromNamespaceAndPath("create", "creative_motor")).defaultBlockState().setValue(CreativeMotorBlock.FACING, Direction.UP));
         test.setBlock(BEARING, ModContent.DYNAMO_BEARING.get().defaultBlockState().setValue(DynamoBearingBlock.FACING, Direction.UP));
         test.setBlock(HUB, Blocks.IRON_BLOCK);
@@ -52,18 +52,18 @@ public final class GeneratorTests {
         if (test.getBlockEntity(MOTOR) instanceof CreativeMotorBlockEntity motor) motor.generatedSpeed.setValue(rpm);
     }
 
-    private static void placeCoils(GameTestHelper test) {
+    static void placeCoils(GameTestHelper test) {
         test.setBlock(HUB.west(4), ModContent.INDUCTION_COIL.get().defaultBlockState().setValue(InductionCoilBlock.FACING, Direction.EAST));
         test.setBlock(HUB.east(4), ModContent.INDUCTION_COIL.get().defaultBlockState().setValue(InductionCoilBlock.FACING, Direction.WEST));
         test.setBlock(HUB.north(4), ModContent.INDUCTION_COIL.get().defaultBlockState().setValue(InductionCoilBlock.FACING, Direction.SOUTH));
         test.setBlock(HUB.south(4), ModContent.INDUCTION_COIL.get().defaultBlockState().setValue(InductionCoilBlock.FACING, Direction.NORTH));
     }
 
-    private static DynamoBearingBlockEntity bearing(GameTestHelper test) {
+    static DynamoBearingBlockEntity bearing(GameTestHelper test) {
         return (DynamoBearingBlockEntity) test.getBlockEntity(BEARING);
     }
 
-    private static InductionCoilBlockEntity coil(GameTestHelper test, BlockPos pos) {
+    static InductionCoilBlockEntity coil(GameTestHelper test, BlockPos pos) {
         return (InductionCoilBlockEntity) test.getBlockEntity(pos);
     }
 

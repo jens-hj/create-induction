@@ -44,8 +44,6 @@ public class PowerGridCoilBlockEntity extends InductionCoilBlockEntity implement
 
     private ElectricBehaviour electric;
     private @Nullable VoltageSourceCoupling source;
-    /** RMS EMF of the last tick [V], the scale for turning circuit current back into coil current. */
-    private double sourceEmf;
     /** Current leaving the positive terminal [A], as solved by the circuit. */
     private double circuitCurrent;
 
@@ -117,12 +115,10 @@ public class PowerGridCoilBlockEntity extends InductionCoilBlockEntity implement
         if (!wired()) {
             source.setVoltage(0);
             circuitCurrent = 0;
-            sourceEmf = 0;
             return;
         }
         circuitCurrent = -source.getCurrent();
         if (Double.isNaN(circuitCurrent)) circuitCurrent = 0;
-        sourceEmf = rmsEmf;
         // Driven: the supply works against the magnets' back-EMF. Generating: the rectified EMF feeds the circuit.
         source.setVoltage(isDriven() ? -meanEmf : rmsEmf);
     }
@@ -133,8 +129,10 @@ public class PowerGridCoilBlockEntity extends InductionCoilBlockEntity implement
         // Coil current is counted positive when it makes the face a north pole, i.e. flowing in at the positive
         // terminal; the circuit reports what flows out of it.
         if (isDriven()) return -circuitCurrent;
-        if (sourceEmf < 1.0e-6 || circuitCurrent <= 0) return 0;
-        return circuitCurrent * emf / sourceEmf;
+        if (circuitCurrent <= 0) return 0;
+        // The circuit answers a tick late, so never carry more than this instant's EMF could push through the
+        // winding: a generating coil must not end up driving the rotor.
+        return Math.copySign(Math.min(circuitCurrent, Math.abs(emf) / resistance()), emf);
     }
 
     @Override
