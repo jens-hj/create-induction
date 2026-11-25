@@ -1,0 +1,6 @@
+{
+  "selector": "create_induction:dynamo_bearing_plate",
+  "properties": {
+    "sable:mass": 0.25
+  }
+}

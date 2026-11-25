@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "create_induction:block/induction_coil_front",
+    "bottom": "create_induction:block/induction_coil_back",
+    "side": "create_induction:block/induction_coil_side"
+  }
+}

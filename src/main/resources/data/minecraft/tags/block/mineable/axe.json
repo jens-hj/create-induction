@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "create_induction:dynamo_bearing",
+    "create_induction:dynamo_bearing_plate"
+  ]
+}

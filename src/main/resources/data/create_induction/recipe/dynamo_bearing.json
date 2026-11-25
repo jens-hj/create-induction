@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "P",
+    "C",
+    "S"
+  ],
+  "key": {
+    "P": {
+      "item": "create:iron_sheet"
+    },
+    "C": {
+      "item": "create:andesite_casing"
+    },
+    "S": {
+      "item": "create:shaft"
+    }
+  },
+  "result": {
+    "id": "create_induction:dynamo_bearing",
+    "count": 1
+  }
+}

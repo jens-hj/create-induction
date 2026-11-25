@@ -1,0 +1,22 @@
+{
+  "itemGroup.create_induction": "Create: Induction",
+  "block.create_induction.permanent_magnet": "Permanent Magnet",
+  "block.create_induction.induction_coil": "Induction Coil",
+  "block.create_induction.dynamo_bearing": "Dynamo Bearing",
+  "block.create_induction.dynamo_bearing_plate": "Dynamo Bearing",
+  "create_induction.coil.title": "Induction Coil:",
+  "create_induction.coil.generating": "Generating",
+  "create_induction.coil.driving": "Electromagnet",
+  "create_induction.coil.idle": "Idle",
+  "create_induction.coil.power": "Power:",
+  "create_induction.coil.voltage": "Voltage:",
+  "create_induction.coil.current": "Current:",
+  "create_induction.coil.stored": "Stored:",
+  "create_induction.coil.magnets": "Magnets in range:",
+  "create_induction.bearing.title": "Rotor:",
+  "create_induction.bearing.rotor_speed": "Rotor speed:",
+  "create_induction.bearing.delivered": "Power delivered:",
+  "block.create_induction.permanent_magnet.tooltip.summary": "A magnet that is _always on_. Attracts and repels _Redstone Magnets_ and induces current in _Induction Coils_ it moves past. The red face is north.",
+  "block.create_induction.induction_coil.tooltip.summary": "Makes _electricity_ from magnets moving past its face, braking them as it does. Given a _redstone signal_ it spends energy to become an _electromagnet_.",
+  "block.create_induction.dynamo_bearing.tooltip.summary": "Spins the structure on its face as a _physics rotor_ using rotational force from behind. Costs _stress for the work it does_: the harder the rotor is braked, the more it draws."
+}

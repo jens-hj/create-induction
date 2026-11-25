@@ -1,0 +1,6 @@
+{
+  "selector": "create_induction:permanent_magnet",
+  "properties": {
+    "sable:mass": 2.0
+  }
+}

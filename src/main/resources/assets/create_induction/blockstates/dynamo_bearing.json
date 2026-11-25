@@ -1,0 +1,56 @@
+{
+  "variants": {
+    "assembled=false,facing=up": {
+      "model": "create_induction:block/dynamo_bearing"
+    },
+    "assembled=true,facing=up": {
+      "model": "create_induction:block/dynamo_bearing_base"
+    },
+    "assembled=false,facing=down": {
+      "model": "create_induction:block/dynamo_bearing",
+      "x": 180
+    },
+    "assembled=true,facing=down": {
+      "model": "create_induction:block/dynamo_bearing_base",
+      "x": 180
+    },
+    "assembled=false,facing=north": {
+      "model": "create_induction:block/dynamo_bearing",
+      "x": 90
+    },
+    "assembled=true,facing=north": {
+      "model": "create_induction:block/dynamo_bearing_base",
+      "x": 90
+    },
+    "assembled=false,facing=south": {
+      "model": "create_induction:block/dynamo_bearing",
+      "x": 90,
+      "y": 180
+    },
+    "assembled=true,facing=south": {
+      "model": "create_induction:block/dynamo_bearing_base",
+      "x": 90,
+      "y": 180
+    },
+    "assembled=false,facing=east": {
+      "model": "create_induction:block/dynamo_bearing",
+      "x": 90,
+      "y": 90
+    },
+    "assembled=true,facing=east": {
+      "model": "create_induction:block/dynamo_bearing_base",
+      "x": 90,
+      "y": 90
+    },
+    "assembled=false,facing=west": {
+      "model": "create_induction:block/dynamo_bearing",
+      "x": 90,
+      "y": 270
+    },
+    "assembled=true,facing=west": {
+      "model": "create_induction:block/dynamo_bearing_base",
+      "x": 90,
+      "y": 270
+    }
+  }
+}
