@@ -153,7 +153,8 @@ public class DynamoBearingBlockEntity extends GeneratingKineticBlockEntity imple
 
     @Override
     public float calculateAddedStressCapacity() {
-        float capacity = Config.BEARING_OUTPUT_CAPACITY.get().floatValue();
+        // Only a source while the rotor drives the shaft; otherwise the goggles would list an empty generator.
+        float capacity = output != 0 ? Config.BEARING_OUTPUT_CAPACITY.get().floatValue() : 0;
         this.lastCapacityProvided = capacity;
         return capacity;
     }
@@ -471,6 +472,9 @@ public class DynamoBearingBlockEntity extends GeneratingKineticBlockEntity imple
             compound.putFloat("RotorSpeed", rotorSpeed);
             compound.putDouble("Delivered", deliveredWatts);
             compound.putDouble("Output", outputWatts);
+            // The goggles work the stress figures out on the client, so it has to know these too.
+            if (!Double.isNaN(impact)) compound.putDouble("Impact", impact);
+            compound.putFloat("OutputSpeed", output);
         }
     }
 
@@ -484,6 +488,8 @@ public class DynamoBearingBlockEntity extends GeneratingKineticBlockEntity imple
             rotorSpeed = compound.getFloat("RotorSpeed");
             deliveredWatts = compound.getDouble("Delivered");
             outputWatts = compound.getDouble("Output");
+            impact = compound.contains("Impact") ? compound.getDouble("Impact") : Double.NaN;
+            output = compound.getFloat("OutputSpeed");
         }
     }
 
