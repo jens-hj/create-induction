@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.2
+- The goggles now say when an Induction Coil is wired into a Power Grid circuit, that it makes no Forge Energy while a wire is attached, and when nothing on the circuit is drawing power.
+
 ## 0.3.1
 - Fixed the goggles showing only a Dynamo Bearing's idle stress impact. They now show what it really draws, which rises with the electrical load.
 - A Dynamo Bearing no longer lists an empty "Generator Stats" entry while it is being driven.
