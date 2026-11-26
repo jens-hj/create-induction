@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+- Fixed the goggles showing only a Dynamo Bearing's idle stress impact. They now show what it really draws, which rises with the electrical load.
+- A Dynamo Bearing no longer lists an empty "Generator Stats" entry while it is being driven.
+
 ## 0.3.0
 - Electric motors. A Dynamo Bearing with nothing else turning its shaft now drives it from the rotor, so a rotor spun by coils powers Create machines.
 - New block: Commutator. Paired with a Slip Ring it feeds the coils attached to it and reverses each one as it turns, making a self-starting brushed motor. Scroll to set the magnet pole count; negative reverses it.
