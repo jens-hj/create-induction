@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.3
+- Block textures are less flat: each colour now varies by a shade or two in small patches, in the manner of Create's casings. The designs are unchanged.
+
 ## 0.3.2
 - The goggles now say when an Induction Coil is wired into a Power Grid circuit, that it makes no Forge Energy while a wire is attached, and when nothing on the circuit is drawing power.
 
