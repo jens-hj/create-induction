@@ -63,7 +63,7 @@ Engineer's Goggles show voltage, current and power on coils, and rotor speed and
 ## Energy
 
 - **Forge Energy** – coils hold a small buffer and push into any neighbouring block that accepts FE. A full buffer means no load, no current and no braking.
-- **[Power Grid](https://modrinth.com/mod/power-grid)** (optional) – every coil gets a positive and a negative terminal on its back. Wire it up and it is a real voltage source in the circuit: the current your circuit draws is the current that brakes the rotor, and with a redstone signal, voltage applied from outside drives it as an electromagnet. A generating coil lets nothing flow back in, so it can charge a battery directly.
+- **[Power Grid](https://modrinth.com/mod/power-grid)** (optional) – every coil gets a positive and a negative terminal on its back. Wire it up and it is a real voltage source in the circuit: the current your circuit draws is the current that brakes the rotor, and with a redstone signal, voltage applied from outside drives it as an electromagnet. A generating coil lets nothing flow back in, so it can charge a battery directly. A wired coil belongs to the circuit: it makes no Forge Energy while a wire is attached, and gives nothing until something on the circuit draws power. The goggles say so.
 
 ## Requirements
 
