@@ -1,5 +1,8 @@
 package dev.jensh.createinduction.compat.powergrid;
 
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
+import com.simibubi.create.foundation.utility.CreateLang;
 import com.simibubi.create.foundation.blockEntity.behaviour.BlockEntityBehaviour;
 import dev.jensh.createinduction.Config;
 import dev.jensh.createinduction.content.coil.InductionCoilBlockEntity;
@@ -157,6 +160,16 @@ public class PowerGridCoilBlockEntity extends InductionCoilBlockEntity implement
     }
 
     private boolean clientWired;
+
+    @Override
+    protected void addModeLines(List<Component> tooltip, float current) {
+        if (!clientWired) return;
+        CreateLang.builder().add(Component.translatable("create_induction.coil.wired")).style(ChatFormatting.GOLD).forGoggles(tooltip, 1);
+        CreateLang.builder().add(Component.translatable("create_induction.coil.wired.no_fe")).style(ChatFormatting.GRAY).forGoggles(tooltip, 1);
+        if (Math.abs(current) < 0.05f) {
+            CreateLang.builder().add(Component.translatable("create_induction.coil.wired.open")).style(ChatFormatting.RED).forGoggles(tooltip, 1);
+        }
+    }
 
     @Override
     protected void write(net.minecraft.nbt.CompoundTag compound, net.minecraft.core.HolderLookup.Provider registries, boolean clientPacket) {

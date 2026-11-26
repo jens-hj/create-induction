@@ -460,12 +460,17 @@ public class InductionCoilBlockEntity extends SmartBlockEntity implements IHaveG
         CreateLang.builder().add(Component.translatable("create_induction.coil." + state))
             .style(power > 0.5f ? ChatFormatting.GREEN : power < -0.5f ? ChatFormatting.GOLD : ChatFormatting.DARK_GRAY)
             .forGoggles(tooltip, 1);
+        addModeLines(tooltip, current);
         line(tooltip, "create_induction.coil.power", format(Math.abs(power)) + " W" + powerSuffix());
         line(tooltip, "create_induction.coil.voltage", format(voltage) + " V");
         line(tooltip, "create_induction.coil.current", format(current) + " A");
         line(tooltip, "create_induction.coil.stored", Mth.floor(stored) + " / " + capacity() + " FE");
         line(tooltip, "create_induction.coil.magnets", Integer.toString(clientMagnets));
         return true;
+    }
+
+    /** Goggle lines saying how the coil is hooked up, when that changes what it does. */
+    protected void addModeLines(List<Component> tooltip, float current) {
     }
 
     /** Extra text after the wattage on the goggles. */
