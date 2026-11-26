@@ -39,6 +39,21 @@ def noise(x, y, seed):
     return 0.7 * (top * (1 - fy) + bottom * fy) + 0.3 * lattice(x, y, seed + 17)
 
 
+def mottle(image, seed, strength=0.06):
+    """Breaks up flat areas: every colour drifts a shade lighter or darker in small patches, as on Create's casings."""
+    out = image.copy()
+    for y in range(image.height):
+        for x in range(image.width):
+            r, g, b, alpha = image.getpixel((x, y))
+            if alpha == 0 or (r, g, b, alpha) == BLACK:
+                continue
+            n = noise(x, y, seed + 101) * 0.75 + lattice(x, y, seed + 103) * 0.45
+            level = 2 if n > 0.62 else 1 if n > 0.22 else -2 if n < -0.62 else -1 if n < -0.22 else 0
+            k = 1 + strength * level
+            out.putpixel((x, y), tuple(max(0, min(255, round(v * k))) for v in (r, g, b)) + (alpha,))
+    return out
+
+
 def tone(palette, index):
     return palette[max(0, min(len(palette) - 1, int(round(index))))]
 
@@ -435,8 +450,10 @@ def main():
         "slip_ring_face": slip_face(),
         "commutator_side": commutator_side(),
     }
+    seeds = {"commutator_side": "slip_ring_side"}  # the two share a body, so they wear the same way
     for name, image in textures.items():
-        image.save(TEXTURES / f"{name}.png")
+        seed = sum(ord(ch) * (i + 1) for i, ch in enumerate(seeds.get(name, name)))
+        mottle(image, seed).save(TEXTURES / f"{name}.png")
     models = {
         "induction_coil": COIL,
         "permanent_magnet": MAGNET,
